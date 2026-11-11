@@ -129,6 +129,24 @@
       svg.map .land:hover, svg.map .land:focus { fill: var(--land-hover); outline: none; }
       svg.map text { pointer-events: none; font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; fill: #20302a; }
       svg.map .count { font-family: "Source Sans 3", sans-serif; font-weight: 600; fill: #5a4a22; }
+      /* ---------- Mapa de la pregunta ---------- */
+      .qmap-box { border-radius: 14px; overflow: hidden; border: 1px solid var(--ocean-2); margin-top: 14px; }
+      svg.qmap { display: block; width: 100%; height: auto; background: var(--ocean); }
+      svg.qmap .land { fill: var(--land); stroke: var(--ocean-2); stroke-width: 2; opacity: .45; }
+      svg.qmap .land.active { fill: var(--teal); stroke: var(--amber); stroke-width: 3.5; opacity: 1; }
+      .qmap-caption {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin-top: 10px; font-weight: 700; color: var(--ink);
+      }
+      .qmap-caption .pin-dot {
+        flex: none; width: 14px; height: 14px; border-radius: 50%;
+        background: var(--amber); border: 3px solid var(--teal); display: inline-block;
+      }
+      .qmap-caption .where { color: var(--ink-soft); font-weight: 600; }
+      .qmarker-pulse { fill: var(--amber); opacity: .55; transform-box: fill-box; transform-origin: center; animation: qpulse 1.6s ease-out infinite; }
+      .qmarker-pin { fill: var(--amber); stroke: #fff; stroke-width: 2; }
+      .qmarker-core { fill: var(--teal-dark); }
+      @keyframes qpulse { 0% { transform: scale(.45); opacity: .7; } 100% { transform: scale(1.9); opacity: 0; } }
       .region-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
       .chip {
         border: 1.5px solid var(--teal); color: var(--teal-dark); background: var(--surface);
@@ -203,7 +221,7 @@
       }
       .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
       footer { margin-top: 26px; color: var(--ink-soft); font-size: .88rem; text-align: center; }
-      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+      @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     </style>
   </head>
   <body>
@@ -211,7 +229,7 @@
       <!-- ================= PANTALLA PRINCIPAL ================= -->
       <section id="screen-home">
         <h1 data-i18n="title">Países y Capitales</h1>
-        <p class="lede" data-i18n="lede">Toca un continente en el mapa y demuestra cuánto sabes de capitales del mundo. Cada partida suma a la tabla de mejores puntajes.</p>
+        <p class="lede" data-i18n="lede">Toca un continente en el mapa y demuestra cuánto sabes de capitales del mundo. Solo las partidas jugadas con tu sesión de Microsoft iniciada se guardan en la tabla de mejores puntajes.</p>
 
         <div class="card" id="account-card">
           <div class="account">
@@ -224,9 +242,6 @@
             <button class="btn ghost hidden" id="btn-signout" data-i18n="signOut">Cerrar sesión</button>
           </div>
           <p class="sync-note" id="sync-note"></p>
-          <div class="actions hidden" id="sync-actions" style="margin-top:10px">
-            <button class="btn amber" id="btn-sync" data-i18n="syncNow">Sincronizar puntajes ahora</button>
-          </div>
         </div>
 
         <div class="card">
@@ -337,6 +352,26 @@
           <div class="stat" id="hud-hearts-wrap"><small data-i18n="hLives">Errores permitidos</small><span class="hearts" id="hud-hearts"></span></div>
         </div>
         <div class="progress"><div id="progress-bar"></div></div>
+        <div class="qmap-box">
+          <svg class="qmap" id="q-map" viewBox="0 0 1000 470" role="img" aria-label="Mapa mundial con el país de la pregunta remarcado">
+            <path class="land" data-qregion="na" d="M58,128 L96,66 L168,44 L262,50 L316,74 L330,106 L292,142 L306,178 L262,214 L224,206 L214,246 L176,240 L158,196 L112,180 L66,168 Z" />
+            <path class="land" data-qregion="latam" d="M232,262 L272,250 L306,282 L300,338 L276,398 L252,436 L238,368 L224,306 Z" />
+            <circle class="land" data-qregion="latam" cx="238" cy="228" r="9" />
+            <circle class="land" data-qregion="latam" cx="262" cy="222" r="7" />
+            <path class="land" data-qregion="eu" d="M462,102 L512,72 L560,80 L566,112 L602,102 L618,132 L566,158 L528,150 L508,180 L486,168 L470,140 Z" />
+            <path class="land" data-qregion="af" d="M468,196 L540,178 L596,204 L606,268 L572,348 L524,376 L492,306 L464,244 Z" />
+            <path class="land" data-qregion="as" d="M626,84 L724,54 L852,66 L936,116 L906,168 L838,168 L812,214 L770,226 L742,176 L700,168 L648,156 L622,122 Z" />
+            <path class="land" data-qregion="as" d="M772,232 L800,228 L806,268 L790,300 L776,262 Z" />
+            <path class="land" data-qregion="oc" d="M828,308 L898,290 L952,312 L924,350 L852,344 Z" />
+            <path class="land" data-qregion="oc" d="M948,368 L968,362 L962,392 L946,386 Z" />
+            <g id="q-marker" transform="translate(540,128)">
+              <circle class="qmarker-pulse" r="16" />
+              <circle class="qmarker-pin" r="11" />
+              <circle class="qmarker-core" r="4.5" />
+            </g>
+          </svg>
+        </div>
+        <p class="qmap-caption"><span class="pin-dot" aria-hidden="true"></span><span id="q-map-country">—</span><span class="where" id="q-map-region">—</span></p>
         <div class="card">
           <div class="q-flag" id="q-flag">🏳️</div>
           <h2 class="q-country" id="q-country">—</h2>
@@ -578,16 +613,27 @@
       world: { es: "Todo el mundo", en: "Whole world", fr: "Le monde entier" }
     };
 
+    /* Posición aproximada de cada país [x, y] sobre el mapa esquemático (viewBox 1000×470),
+       ajustada a la forma de cada continente para que el pin caiga sobre la tierra. */
+    var COORDS = {
+      ES:[490,148],FR:[500,135],DE:[525,115],IT:[533,152],GB:[488,105],PT:[475,145],NL:[515,112],BE:[510,118],CH:[515,132],AT:[535,130],PL:[545,118],CZ:[538,125],SK:[548,127],HU:[548,135],GR:[560,168],SE:[540,85],NO:[515,82],DK:[520,95],FI:[565,82],IE:[478,110],IS:[475,85],EE:[565,100],LV:[562,108],LT:[560,115],HR:[540,142],SI:[535,138],RS:[552,145],BA:[542,148],ME:[548,152],AL:[550,160],MK:[556,158],BG:[565,150],RO:[560,138],MD:[572,132],UA:[585,125],BY:[575,112],RU:[600,100],MT:[535,172],LU:[512,122],AD:[495,142],MC:[508,142],CY:[595,165],
+      MA:[480,205],DZ:[505,210],TN:[525,200],LY:[545,215],EG:[575,220],SD:[570,250],ET:[590,265],KE:[585,285],TZ:[575,305],UG:[570,275],NG:[510,270],GH:[495,275],CI:[485,275],SN:[470,245],ML:[485,240],AO:[530,315],ZM:[555,320],ZW:[565,330],MZ:[580,325],ZA:[555,355],MG:[595,320],CM:[515,280],CD:[540,295],CG:[525,290],GA:[520,295],GN:[475,260],BF:[490,255],NE:[515,245],TD:[540,250],MR:[475,225],RW:[565,285],SO:[600,270],ER:[585,245],DJ:[592,258],NA:[530,340],BW:[550,340],LS:[560,360],MW:[575,315],SL:[472,265],LR:[478,272],BJ:[502,268],TG:[498,272],CV:[465,235],MU:[605,335],SC:[605,285],KM:[595,305],
+      JP:[885,140],CN:[820,140],KR:[860,145],KP:[855,135],MN:[820,110],IN:[760,175],PK:[730,160],BD:[792,170],NP:[775,160],LK:[770,205],BT:[790,160],MM:[800,185],TH:[810,195],VN:[830,195],KH:[818,205],LA:[815,185],MY:[815,225],SG:[812,235],ID:[835,240],PH:[850,185],BN:[830,225],TL:[860,250],KZ:[730,105],UZ:[715,125],TM:[700,130],KG:[745,125],TJ:[730,135],AF:[710,145],IR:[685,150],IQ:[665,155],SA:[675,185],YE:[685,205],OM:[700,195],AE:[705,180],QA:[695,178],KW:[685,165],BH:[692,172],JO:[652,172],LB:[645,168],SY:[650,160],IL:[643,175],TR:[630,150],GE:[640,140],AM:[648,145],AZ:[655,142],
+      CA:[190,95],US:[195,155],MX:[175,205],GT:[185,225],BZ:[195,222],HN:[200,230],SV:[195,235],NI:[202,238],CR:[208,245],PA:[220,250],
+      CO:[245,265],VE:[265,260],EC:[238,285],PE:[245,310],BO:[260,330],CL:[250,365],AR:[265,365],PY:[270,340],UY:[278,360],BR:[285,315],GY:[275,255],SR:[282,258],CU:[240,228],JM:[232,232],HT:[250,225],DO:[258,224],BS:[235,215],TT:[272,235],BB:[278,232],GD:[270,240],LC:[274,238],AG:[268,228],
+      AU:[885,322],NZ:[958,380],PG:[845,295],FJ:[950,305],SB:[925,295],VU:[935,315],WS:[965,295],TO:[965,325],KI:[900,285],FM:[880,285],MH:[920,285],PW:[850,285],NR:[905,295],TV:[940,295]
+    };
+    var REGION_CENTER = { eu:[540,128], af:[536,272], as:[778,140], na:[190,140], latam:[262,320], oc:[890,322] };
+
     var I18N = {
       es: {
         title: "Países y Capitales",
-        lede: "Toca un continente en el mapa y demuestra cuánto sabes de capitales del mundo. Cada partida suma a la tabla de mejores puntajes.",
+        lede: "Toca un continente en el mapa y demuestra cuánto sabes de capitales del mundo. Solo las partidas jugadas con tu sesión de Microsoft iniciada se guardan en la tabla de mejores puntajes.",
         accLoading: "Conectando…", accDetailLoading: "Revisando tu sesión de Microsoft",
         signIn: "Iniciar sesión con Microsoft", signOut: "Cerrar sesión",
         accNone: "Sin sesión de Microsoft",
         accNoneDetail: "Inicia sesión para guardar tus puntajes en el Excel de tu OneDrive.",
         accFirstTime: "La primera vez, Microsoft te pedirá tu cuenta y permiso para la carpeta de la app en OneDrive.",
-        syncNow: "Sincronizar puntajes ahora",
         settings: "Configuración", settingsSub: "Ajusta la partida antes de tocar un continente.",
         playerName: "Tu nombre", playerNamePh: "Ej. Jaime",
         language: "Idioma", numQuestions: "Número de preguntas", maxErrors: "Errores permitidos", unlimited: "Sin límite",
@@ -598,36 +644,34 @@
         hQuestion: "Pregunta", hScore: "Puntaje", hStreak: "Racha", hLives: "Errores permitidos",
         hCorrect: "Aciertos", hRegion: "Región", hPlayer: "Jugador",
         askCapital: "¿Cuál es su capital?",
+        onMap: "remarcado en el mapa",
         endTitle: "¡Partida terminada!", endTitleOver: "¡Se acabaron los errores permitidos!", endPoints: "puntos",
         playAgain: "Jugar otra vez esta región", changeRegion: "Cambiar de región",
         colPlayer: "Jugador", colRegion: "Región", colCorrect: "Aciertos", colScore: "Puntaje", colDate: "Fecha",
         boardEmpty: "Todavía no hay puntajes. ¡Sé la primera persona en la tabla!",
-        sourceCloud: "OneDrive · Excel", sourceLocal: "Este dispositivo",
+        sourceCloud: "OneDrive · Excel",
         countries: "países",
         correctMsg: "¡Correcto!", wrongMsg: "No: la capital es",
         streakMsg: "¡Racha de {n}!",
-        pendingN: "{n} puntaje(s) esperando sincronizar con OneDrive.",
         syncedOk: "Puntajes sincronizados con tu OneDrive.",
-        syncFail: "No se pudo sincronizar con OneDrive. Tus puntajes quedan guardados en este dispositivo y se reintentará al iniciar sesión.",
+        syncFail: "No se pudo guardar tu puntaje en el Excel de OneDrive, así que no quedó registrado.",
         endSavedCloud: "Tu puntaje se guardó en el Excel de tu OneDrive. 🎉",
-        endSavedLocal: "Tu puntaje quedó en este dispositivo. Inicia sesión con Microsoft para subirlo al Excel de OneDrive.",
+        endNotSaved: "Este puntaje no se guardó porque no iniciaste sesión con Microsoft.",
         guestName: "Invitado",
         needName: "Jugador",
         signedInAs: "Sesión iniciada",
-        toastSynced: "Puntajes sincronizados con OneDrive",
-        toastSavedLocal: "Puntaje guardado en este dispositivo",
-        cloudBoardFail: "No se pudo leer el Excel de OneDrive; se muestran los puntajes de este dispositivo.",
-        syncing: "Sincronizando con OneDrive…"
+        toastSynced: "Puntaje guardado en OneDrive",
+        cloudBoardFail: "No se pudo leer el Excel de OneDrive.",
+        syncing: "Conectando con OneDrive…"
       },
       en: {
         title: "Countries & Capitals",
-        lede: "Tap a continent on the map and show how many world capitals you know. Every game counts toward the leaderboard.",
+        lede: "Tap a continent on the map and show how many world capitals you know. Only games played while signed in with Microsoft are saved to the leaderboard.",
         accLoading: "Connecting…", accDetailLoading: "Checking your Microsoft session",
         signIn: "Sign in with Microsoft", signOut: "Sign out",
         accNone: "Not signed in to Microsoft",
         accNoneDetail: "Sign in to save your scores to the Excel file in your OneDrive.",
         accFirstTime: "The first time, Microsoft will ask for your account and permission for the app folder in OneDrive.",
-        syncNow: "Sync scores now",
         settings: "Settings", settingsSub: "Set up your game before tapping a continent.",
         playerName: "Your name", playerNamePh: "E.g. Jaime",
         language: "Language", numQuestions: "Number of questions", maxErrors: "Mistakes allowed", unlimited: "Unlimited",
@@ -638,36 +682,34 @@
         hQuestion: "Question", hScore: "Score", hStreak: "Streak", hLives: "Mistakes allowed",
         hCorrect: "Correct", hRegion: "Region", hPlayer: "Player",
         askCapital: "What is its capital?",
+        onMap: "highlighted on the map",
         endTitle: "Game over!", endTitleOver: "Out of allowed mistakes!", endPoints: "points",
         playAgain: "Play this region again", changeRegion: "Change region",
         colPlayer: "Player", colRegion: "Region", colCorrect: "Correct", colScore: "Score", colDate: "Date",
         boardEmpty: "No scores yet. Be the first name on the board!",
-        sourceCloud: "OneDrive · Excel", sourceLocal: "This device",
+        sourceCloud: "OneDrive · Excel",
         countries: "countries",
         correctMsg: "Correct!", wrongMsg: "No — the capital is",
         streakMsg: "Streak of {n}!",
-        pendingN: "{n} score(s) waiting to sync with OneDrive.",
         syncedOk: "Scores synced with your OneDrive.",
-        syncFail: "Could not sync with OneDrive. Your scores stay on this device and will retry when you sign in.",
+        syncFail: "Your score could not be saved to the OneDrive Excel file, so it was not recorded.",
         endSavedCloud: "Your score was saved to the Excel file in your OneDrive. 🎉",
-        endSavedLocal: "Your score is on this device. Sign in with Microsoft to upload it to the OneDrive Excel file.",
+        endNotSaved: "This score was not saved because you did not sign in with Microsoft.",
         guestName: "Guest",
         needName: "Player",
         signedInAs: "Signed in",
-        toastSynced: "Scores synced with OneDrive",
-        toastSavedLocal: "Score saved on this device",
-        cloudBoardFail: "The OneDrive Excel file could not be read; showing this device's scores.",
-        syncing: "Syncing with OneDrive…"
+        toastSynced: "Score saved to OneDrive",
+        cloudBoardFail: "The OneDrive Excel file could not be read.",
+        syncing: "Connecting to OneDrive…"
       },
       fr: {
         title: "Pays et Capitales",
-        lede: "Touchez un continent sur la carte et montrez combien de capitales du monde vous connaissez. Chaque partie compte pour le classement.",
+        lede: "Touchez un continent sur la carte et montrez combien de capitales du monde vous connaissez. Seules les parties jouées avec votre session Microsoft ouverte sont enregistrées au classement.",
         accLoading: "Connexion…", accDetailLoading: "Vérification de votre session Microsoft",
         signIn: "Se connecter avec Microsoft", signOut: "Se déconnecter",
         accNone: "Pas de session Microsoft",
         accNoneDetail: "Connectez-vous pour enregistrer vos scores dans le fichier Excel de votre OneDrive.",
         accFirstTime: "La première fois, Microsoft demandera votre compte et l'accès au dossier de l'application dans OneDrive.",
-        syncNow: "Synchroniser les scores maintenant",
         settings: "Réglages", settingsSub: "Préparez votre partie avant de toucher un continent.",
         playerName: "Votre nom", playerNamePh: "Ex. Jaime",
         language: "Langue", numQuestions: "Nombre de questions", maxErrors: "Erreurs permises", unlimited: "Illimité",
@@ -678,26 +720,25 @@
         hQuestion: "Question", hScore: "Score", hStreak: "Série", hLives: "Erreurs permises",
         hCorrect: "Bonnes réponses", hRegion: "Région", hPlayer: "Joueur",
         askCapital: "Quelle est sa capitale ?",
+        onMap: "surligné sur la carte",
         endTitle: "Partie terminée !", endTitleOver: "Plus d'erreurs permises !", endPoints: "points",
         playAgain: "Rejouer cette région", changeRegion: "Changer de région",
         colPlayer: "Joueur", colRegion: "Région", colCorrect: "Bonnes rép.", colScore: "Score", colDate: "Date",
         boardEmpty: "Aucun score pour l'instant. Soyez le premier nom du tableau !",
-        sourceCloud: "OneDrive · Excel", sourceLocal: "Cet appareil",
+        sourceCloud: "OneDrive · Excel",
         countries: "pays",
         correctMsg: "Bonne réponse !", wrongMsg: "Non — la capitale est",
         streakMsg: "Série de {n} !",
-        pendingN: "{n} score(s) en attente de synchronisation avec OneDrive.",
         syncedOk: "Scores synchronisés avec votre OneDrive.",
-        syncFail: "Impossible de synchroniser avec OneDrive. Vos scores restent sur cet appareil et seront réessayés à la connexion.",
+        syncFail: "Votre score n'a pas pu être enregistré dans le fichier Excel OneDrive, il n'a donc pas été conservé.",
         endSavedCloud: "Votre score a été enregistré dans le fichier Excel de votre OneDrive. 🎉",
-        endSavedLocal: "Votre score est sur cet appareil. Connectez-vous avec Microsoft pour l'envoyer au fichier Excel OneDrive.",
+        endNotSaved: "Ce score n'a pas été enregistré car vous n'avez pas ouvert de session Microsoft.",
         guestName: "Invité",
         needName: "Joueur",
         signedInAs: "Session ouverte",
-        toastSynced: "Scores synchronisés avec OneDrive",
-        toastSavedLocal: "Score enregistré sur cet appareil",
-        cloudBoardFail: "Impossible de lire le fichier Excel OneDrive ; affichage des scores de cet appareil.",
-        syncing: "Synchronisation avec OneDrive…"
+        toastSynced: "Score enregistré dans OneDrive",
+        cloudBoardFail: "Impossible de lire le fichier Excel OneDrive.",
+        syncing: "Connexion à OneDrive…"
       }
     };
     </script>
@@ -706,8 +747,13 @@
     "use strict";
     /* ==================== ESTADO ==================== */
     var LS_SETTINGS = "pc-settings-v1";
-    var LS_LOCAL = "pc-local-scores-v1";      /* todos los puntajes guardados en este dispositivo */
-    var LS_PENDING = "pc-pending-scores-v1";  /* los que aún no están en el Excel de OneDrive */
+    /* Sin cola local: solo se guardan los puntajes jugados con sesión de Microsoft
+       iniciada, directo en el Excel de OneDrive. Se borran las colas que versiones
+       anteriores hayan dejado en este dispositivo. */
+    try {
+      localStorage.removeItem("pc-local-scores-v1");
+      localStorage.removeItem("pc-pending-scores-v1");
+    } catch (e) {}
 
     var settings = { lang: "es", name: "", count: 10, maxErrors: 3 };
     try {
@@ -716,17 +762,11 @@
     } catch (e) {}
     if (!I18N[settings.lang]) settings.lang = "es";
 
-    var localScores = loadList(LS_LOCAL);
-    var pendingScores = loadList(LS_PENDING);
     var cloudScores = null;        /* null = Excel aún no leído */
     var cloudError = false;
     var account = null;
     var lastGameId = null;
 
-    function loadList(key) {
-      try { var v = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(v) ? v : []; }
-      catch (e) { return []; }
-    }
     function storeList(key, list) {
       try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) {}
     }
@@ -807,12 +847,8 @@
 
     /* ==================== MARCADOR ==================== */
     function displayScores() {
-      /* Si el Excel ya se leyó, manda la nube; si no, lo local.
-         Los pendientes siempre se mezclan sin duplicar. */
-      var base = cloudScores ? cloudScores.slice() : localScores.slice();
-      var seen = {};
-      base.forEach(function (r) { seen[recordKey(r)] = true; });
-      pendingScores.forEach(function (r) { if (!seen[recordKey(r)]) base.push(r); });
+      /* El marcador viene solo del Excel de OneDrive; sin sesión no hay puntajes que mostrar. */
+      var base = cloudScores ? cloudScores.slice() : [];
       base.sort(function (a, b) {
         if (b.score !== a.score) return b.score - a.score;
         if (b.correct !== a.correct) return b.correct - a.correct;
@@ -849,7 +885,7 @@
       var html = boardHTML();
       $("board-wrap").innerHTML = html;
       $("board-wrap-2").innerHTML = html;
-      var src = cloudScores ? t("sourceCloud") : t("sourceLocal");
+      var src = t("sourceCloud");
       $("board-source").textContent = src;
       $("board-source-2").textContent = src;
       $("board-source").className = "pill" + (cloudScores ? "" : " warn");
@@ -888,7 +924,7 @@
         account = pca.getActiveAccount() || accounts[0] || null;
         msalReady = true;
         renderAccount();
-        if (account) { loadCloudAndSync(); }
+        if (account) { loadCloud(); }
       }).catch(function () { renderAccount(); });
     }
     function getTokenSilent() {
@@ -915,7 +951,7 @@
     }
     function renderAccount() {
       var nameEl = $("account-name"), detEl = $("account-detail"), av = $("account-avatar");
-      var note = $("sync-note"), actions = $("sync-actions");
+      var note = $("sync-note");
       if (account) {
         var nm = account.name || account.username || "";
         nameEl.textContent = nm;
@@ -923,26 +959,14 @@
         av.textContent = (nm.trim().charAt(0) || "✓").toUpperCase();
         $("btn-signin").classList.add("hidden");
         $("btn-signout").classList.remove("hidden");
-        if (pendingScores.length) {
-          note.innerHTML = "<b>" + t("pendingN").replace("{n}", pendingScores.length) + "</b>";
-          actions.classList.remove("hidden");
-        } else if (cloudScores) {
-          note.textContent = t("syncedOk");
-          actions.classList.add("hidden");
-        } else {
-          note.textContent = t("syncing");
-          actions.classList.add("hidden");
-        }
+        note.textContent = cloudScores ? t("syncedOk") : t("syncing");
       } else {
         nameEl.textContent = t("accNone");
         detEl.textContent = t("accNoneDetail") + " " + t("accFirstTime");
         av.textContent = "?";
         $("btn-signin").classList.remove("hidden");
         $("btn-signout").classList.add("hidden");
-        if (pendingScores.length) {
-          note.innerHTML = "<b>" + t("pendingN").replace("{n}", pendingScores.length) + "</b>";
-        } else { note.textContent = ""; }
-        actions.classList.add("hidden");
+        note.textContent = "";
       }
     }
 
@@ -994,7 +1018,9 @@
       });
     }
     var syncing = false;
-    function loadCloudAndSync() {
+    function loadCloud() {
+      /* Solo lee el Excel de OneDrive para mostrar el marcador. No hay cola
+         local ni sincronización posterior de puntajes. */
       if (syncing) return Promise.resolve(false);
       syncing = true;
       renderAccount();
@@ -1002,22 +1028,8 @@
         if (!token) { syncing = false; renderAccount(); return false; }
         return downloadExcel(token).then(function (cloud) {
           cloudScores = cloud; cloudError = false;
-          if (!pendingScores.length) { syncing = false; renderBoard(); renderAccount(); return true; }
-          var seen = {};
-          cloud.forEach(function (r) { seen[recordKey(r)] = true; });
-          var merged = cloud.slice();
-          pendingScores.forEach(function (r) { if (!seen[recordKey(r)]) merged.push(r); });
-          return uploadExcel(token, merged).then(function () {
-            cloudScores = merged;
-            pendingScores = [];
-            storeList(LS_PENDING, pendingScores);
-            /* lo local pasa a reflejar la nube */
-            localScores = merged.slice();
-            storeList(LS_LOCAL, localScores);
-            syncing = false; renderBoard(); renderAccount();
-            toast(t("toastSynced"));
-            return true;
-          });
+          syncing = false; renderBoard(); renderAccount();
+          return true;
         });
       }).catch(function () {
         cloudError = true; syncing = false;
@@ -1026,11 +1038,29 @@
       });
     }
     function saveScoreToCloud(record) {
-      /* Devuelve true si el puntaje quedó en el Excel. */
+      /* Guarda el puntaje directo en el Excel en el momento de terminar la
+         partida. Devuelve true si quedó guardado; si falla, no se guarda
+         en ningún otro lado. Solo se llama con la sesión iniciada. */
       if (!account) return Promise.resolve(false);
-      pendingScores.push(record);
-      storeList(LS_PENDING, pendingScores);
-      return loadCloudAndSync();
+      if (syncing) return Promise.resolve(false);
+      syncing = true;
+      return getTokenSilent().then(function (token) {
+        if (!token) { syncing = false; return false; }
+        return downloadExcel(token).then(function (cloud) {
+          var seen = {};
+          cloud.forEach(function (r) { seen[recordKey(r)] = true; });
+          var merged = cloud.slice();
+          if (!seen[recordKey(record)]) merged.push(record);
+          return uploadExcel(token, merged).then(function () {
+            cloudScores = merged; cloudError = false;
+            syncing = false;
+            return true;
+          });
+        });
+      }).catch(function () {
+        cloudError = true; syncing = false;
+        return false;
+      });
     }
 
     /* ==================== JUEGO ==================== */
@@ -1053,6 +1083,17 @@
       showScreen("screen-game");
       renderQuestion();
     }
+    function updateQuestionMap(item) {
+      /* Remarca en el mapa el continente del país y pone el pin sobre el país. */
+      document.querySelectorAll("#q-map .land").forEach(function (el) {
+        el.classList.toggle("active", el.getAttribute("data-qregion") === item.r);
+      });
+      var xy = COORDS[item.c] || REGION_CENTER[item.r] || [500, 235];
+      $("q-marker").setAttribute("transform", "translate(" + xy[0] + "," + xy[1] + ")");
+      $("q-map-country").textContent = item[settings.lang][0];
+      $("q-map-region").textContent = "· " + regionName(item.r) + " — " + t("onMap");
+      $("q-map").setAttribute("aria-label", item[settings.lang][0] + " · " + regionName(item.r) + " — " + t("onMap"));
+    }
     function renderQuestion() {
       var item = game.deck[game.idx];
       var lang = settings.lang;
@@ -1063,6 +1104,7 @@
       renderHearts();
       $("q-flag").textContent = flagEmoji(item.c);
       $("q-country").textContent = item[lang][0];
+      updateQuestionMap(item);
       $("feedback").textContent = "";
       $("feedback").className = "feedback";
       /* Opciones: la capital correcta + 3 de la misma región (o del mundo) */
@@ -1141,8 +1183,6 @@
         date: new Date().toISOString()
       };
       lastGameId = recordKey(record);
-      localScores.push(record);
-      storeList(LS_LOCAL, localScores);
       $("end-title").textContent = ranOut ? t("endTitleOver") : t("endTitle");
       $("end-score").textContent = game.score;
       $("end-correct").textContent = game.correct + " / " + game.deck.length;
@@ -1155,14 +1195,13 @@
         saveScoreToCloud(record).then(function (ok) {
           $("end-sync").textContent = ok ? t("endSavedCloud") : t("syncFail");
           renderBoard(); renderAccount();
-          if (ok) toast(t("toastSynced")); else toast(t("toastSavedLocal"));
+          if (ok) toast(t("toastSynced"));
         });
       } else {
-        pendingScores.push(record);
-        storeList(LS_PENDING, pendingScores);
-        $("end-sync").textContent = t("endSavedLocal");
-        renderAccount();
-        toast(t("toastSavedLocal"));
+        /* Sin sesión el juego se puede jugar igual, pero el puntaje no se
+           guarda en ningún lado: ni en OneDrive ni en este dispositivo. */
+        lastGameId = null;
+        $("end-sync").textContent = t("endNotSaved");
       }
     }
 
@@ -1174,10 +1213,6 @@
     });
     $("btn-signin").addEventListener("click", signIn);
     $("btn-signout").addEventListener("click", signOut);
-    $("btn-sync").addEventListener("click", function () {
-      if (account) loadCloudAndSync();
-      else signIn();
-    });
     $("btn-quit").addEventListener("click", function () { game = null; showScreen("screen-home"); renderBoard(); });
     $("btn-again").addEventListener("click", function () { if (game) startGame(game.region); });
     $("btn-home").addEventListener("click", function () { showScreen("screen-home"); renderBoard(); renderAccount(); });
