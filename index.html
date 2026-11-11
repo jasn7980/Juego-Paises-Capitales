@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Juego de Países y Capitales</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      :root {
+        --bg: #e9f2f1;
+        --surface: #ffffff;
+        --surface-2: #f2f7f6;
+        --ink: #14312f;
+        --ink-soft: #47635f;
+        --line: #c9dbd8;
+        --teal: #0c6b64;
+        --teal-dark: #084f4a;
+        --teal-soft: #d7ebe8;
+        --amber: #e9a13b;
+        --amber-ink: #7a4d05;
+        --good: #1e7d46;
+        --good-bg: #dff2e4;
+        --bad: #c2402f;
+        --bad-bg: #fbe3de;
+        --ocean: #0d4f4f;
+        --ocean-2: #0a3f42;
+        --land: #e8c476;
+        --land-hover: #f4d488;
+        --shadow: 0 10px 28px rgba(10, 52, 50, .12);
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b1d1f;
+          --surface: #122b2e;
+          --surface-2: #173437;
+          --ink: #e8f3f1;
+          --ink-soft: #a7c2be;
+          --line: #27494b;
+          --teal: #2fbfae;
+          --teal-dark: #57d8c9;
+          --teal-soft: #173f3d;
+          --amber: #f0b45a;
+          --amber-ink: #f5cd8d;
+          --good: #5fd598;
+          --good-bg: #143527;
+          --bad: #ff9a8a;
+          --bad-bg: #3d1d18;
+          --ocean: #0a3438;
+          --ocean-2: #07272b;
+          --land: #d9ab4e;
+          --land-hover: #ecc873;
+          --shadow: 0 10px 28px rgba(0, 0, 0, .4);
+          color-scheme: dark;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Source Sans 3", system-ui, sans-serif;
+        font-size: 17px;
+        line-height: 1.45;
+      }
+      button, select, input { font: inherit; }
+      button, [role="button"], select, input:not([type="checkbox"], [type="radio"]) { min-height: 44px; }
+      .wrap { max-width: 880px; margin: 0 auto; padding: 20px 16px 56px; }
+      h1, h2, h3 { font-family: "Bricolage Grotesque", "Source Sans 3", sans-serif; line-height: 1.08; margin: 0; }
+      h1 { font-size: clamp(2rem, 6vw, 3.1rem); font-weight: 800; letter-spacing: -.01em; }
+      h2 { font-size: 1.35rem; font-weight: 700; }
+      .lede { color: var(--ink-soft); font-size: 1.06rem; margin: 10px 0 0; max-width: 56ch; }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 18px;
+        margin-top: 18px;
+      }
+      .card h2 { margin-bottom: 6px; }
+      .card .sub { color: var(--ink-soft); margin: 0 0 12px; font-size: .95rem; }
+      /* ---------- Cuenta Microsoft ---------- */
+      .account { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+      .avatar {
+        width: 48px; height: 48px; border-radius: 50%; flex: none;
+        background: var(--teal); color: #fff; display: grid; place-items: center;
+        font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 1.25rem;
+      }
+      .account .who { flex: 1 1 220px; min-width: 0; }
+      .account .who b { display: block; font-size: 1.05rem; }
+      .account .who span { color: var(--ink-soft); font-size: .92rem; overflow-wrap: anywhere; }
+      .btn {
+        border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+        border-radius: 12px; padding: 10px 18px; font-weight: 700; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+      @media (prefers-color-scheme: dark) { .btn.primary { color: #06231f; } }
+      .btn.amber { background: var(--amber); border-color: var(--amber); color: #3d2703; }
+      .btn.ghost { background: transparent; }
+      .btn:disabled { opacity: .55; cursor: default; }
+      .sync-note { font-size: .92rem; color: var(--ink-soft); margin-top: 10px; }
+      .sync-note b { color: var(--ink); }
+      .pill {
+        display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem;
+        font-weight: 700; background: var(--teal-soft); color: var(--teal-dark); vertical-align: middle;
+      }
+      .pill.warn { background: var(--bad-bg); color: var(--bad); }
+      /* ---------- Ajustes ---------- */
+      .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+      .field label { display: block; font-weight: 700; font-size: .92rem; margin-bottom: 6px; }
+      .field select, .field input {
+        width: 100%; border: 1px solid var(--line); border-radius: 10px;
+        background: var(--surface-2); color: var(--ink); padding: 9px 12px;
+      }
+      /* ---------- Mapa ---------- */
+      .map-box { border-radius: 14px; overflow: hidden; border: 1px solid var(--ocean-2); }
+      svg.map { display: block; width: 100%; height: auto; background: var(--ocean); }
+      svg.map .land { fill: var(--land); stroke: var(--ocean-2); stroke-width: 2; cursor: pointer; transition: fill .15s; }
+      svg.map .land:hover, svg.map .land:focus { fill: var(--land-hover); outline: none; }
+      svg.map text { pointer-events: none; font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; fill: #20302a; }
+      svg.map .count { font-family: "Source Sans 3", sans-serif; font-weight: 600; fill: #5a4a22; }
+      .region-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+      .chip {
+        border: 1.5px solid var(--teal); color: var(--teal-dark); background: var(--surface);
+        border-radius: 999px; padding: 9px 16px; font-weight: 700; cursor: pointer; min-height: 44px;
+      }
+      .chip.world { background: var(--teal); color: #fff; }
+      @media (prefers-color-scheme: dark) { .chip.world { color: #06231f; } .chip { color: var(--teal-dark); } }
+      /* ---------- Marcador ---------- */
+      .board-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      table.board { width: 100%; border-collapse: collapse; margin-top: 8px; }
+      table.board th { text-align: left; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); padding: 8px 8px 6px; border-bottom: 2px solid var(--line); }
+      table.board td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+      table.board tr:last-child td { border-bottom: none; }
+      table.board tr.me td { background: var(--teal-soft); }
+      .rank {
+        width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center;
+        background: var(--surface-2); border: 1px solid var(--line); font-weight: 800; font-size: .9rem;
+      }
+      tr.top1 .rank { background: var(--amber); border-color: var(--amber); color: #3d2703; }
+      .num { text-align: right; font-variant-numeric: tabular-nums; }
+      .board-empty { color: var(--ink-soft); padding: 14px 4px 4px; }
+      @media (max-width: 560px) {
+        table.board th.c-region, table.board td.c-region,
+        table.board th.c-date, table.board td.c-date { display: none; }
+      }
+      /* ---------- Juego ---------- */
+      .hud { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+      .hud .stat {
+        background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+        padding: 8px 14px; font-weight: 700; box-shadow: var(--shadow);
+      }
+      .hud .stat small { display: block; font-weight: 600; color: var(--ink-soft); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+      .hearts { color: var(--bad); letter-spacing: 2px; font-size: 1.05rem; }
+      .hearts .off { opacity: .25; }
+      .progress { height: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; margin-top: 14px; }
+      .progress > div { height: 100%; background: var(--teal); width: 0%; transition: width .3s; }
+      .q-flag { font-size: 3.4rem; line-height: 1; text-align: center; margin-top: 6px; }
+      .q-country { text-align: center; font-size: clamp(1.7rem, 5.5vw, 2.4rem); margin-top: 8px; }
+      .q-ask { text-align: center; color: var(--ink-soft); margin: 6px 0 4px; }
+      .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+      @media (max-width: 520px) { .options { grid-template-columns: 1fr; } }
+      .opt {
+        border: 2px solid var(--line); background: var(--surface-2); color: var(--ink);
+        border-radius: 14px; padding: 16px; font-size: 1.12rem; font-weight: 700; cursor: pointer;
+        text-align: left; display: flex; gap: 10px; align-items: center; min-height: 60px;
+      }
+      .opt .letter {
+        flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--surface);
+        border: 1px solid var(--line); display: grid; place-items: center; font-size: .9rem;
+      }
+      .opt:not(:disabled):hover { border-color: var(--teal); }
+      .opt.right { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+      .opt.wrong { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+      .opt:disabled { cursor: default; }
+      .feedback { min-height: 30px; text-align: center; font-weight: 700; margin-top: 14px; font-size: 1.05rem; }
+      .feedback.good { color: var(--good); }
+      .feedback.bad { color: var(--bad); }
+      .game-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+      /* ---------- Final ---------- */
+      .final-score { text-align: center; padding: 10px 0 2px; }
+      .final-score .big { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: clamp(3rem, 12vw, 4.6rem); line-height: 1; color: var(--teal-dark); }
+      .final-stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+      .final-stats .stat { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 16px; font-weight: 700; }
+      .final-stats .stat small { display: block; color: var(--ink-soft); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+      .actions .btn { flex: 1 1 180px; }
+      .hidden { display: none !important; }
+      .toast {
+        position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+        background: var(--ink); color: var(--bg); padding: 12px 20px; border-radius: 12px;
+        font-weight: 700; opacity: 0; pointer-events: none; transition: all .25s; max-width: 92vw; text-align: center; z-index: 50;
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      footer { margin-top: 26px; color: var(--ink-soft); font-size: .88rem; text-align: center; }
+      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <!-- ================= PANTALLA PRINCIPAL ================= -->
+      <section id="screen-home">
+        <h1 data-i18n="title">Países y Capitales</h1>
+        <p class="lede" data-i18n="lede">Toca un continente en el mapa y demuestra cuánto sabes de capitales del mundo. Cada partida suma a la tabla de mejores puntajes.</p>
+
+        <div class="card" id="account-card">
+          <div class="account">
+            <div class="avatar" id="account-avatar">?</div>
+            <div class="who">
+              <b id="account-name" data-i18n="accLoading">Conectando…</b>
+              <span id="account-detail" data-i18n="accDetailLoading">Revisando tu sesión de Microsoft</span>
+            </div>
+            <button class="btn primary" id="btn-signin" data-i18n="signIn">Iniciar sesión con Microsoft</button>
+            <button class="btn ghost hidden" id="btn-signout" data-i18n="signOut">Cerrar sesión</button>
+          </div>
+          <p class="sync-note" id="sync-note"></p>
+          <div class="actions hidden" id="sync-actions" style="margin-top:10px">
+            <button class="btn amber" id="btn-sync" data-i18n="syncNow">Sincronizar puntajes ahora</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="settings">Configuración</h2>
+          <p class="sub" data-i18n="settingsSub">Ajusta la partida antes de tocar un continente.</p>
+          <div class="settings">
+            <div class="field">
+              <label for="set-name" data-i18n="playerName">Tu nombre</label>
+              <input id="set-name" type="text" maxlength="30" autocomplete="name" data-i18n-ph="playerNamePh" placeholder="Ej. Jaime" />
+            </div>
+            <div class="field">
+              <label for="set-lang" data-i18n="language">Idioma</label>
+              <select id="set-lang">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="set-count" data-i18n="numQuestions">Número de preguntas</label>
+              <select id="set-count">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="set-errors" data-i18n="maxErrors">Errores permitidos</label>
+              <select id="set-errors">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="5">5</option>
+                <option value="0" data-i18n="unlimited">Sin límite</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="pickRegion">Elige una región en el mapa</h2>
+          <p class="sub" data-i18n="pickRegionSub">Toca un continente con el dedo y la partida empieza de inmediato.</p>
+          <div class="map-box">
+            <svg class="map" viewBox="0 0 1000 470" role="group" aria-label="Mapa mundial">
+              <!-- América del Norte -->
+              <path class="land" data-region="na" tabindex="0" role="button" aria-label="América del Norte"
+                d="M58,128 L96,66 L168,44 L262,50 L316,74 L330,106 L292,142 L306,178 L262,214 L224,206 L214,246 L176,240 L158,196 L112,180 L66,168 Z" />
+              <!-- América Latina y el Caribe -->
+              <path class="land" data-region="latam" tabindex="0" role="button" aria-label="América Latina y el Caribe"
+                d="M232,262 L272,250 L306,282 L300,338 L276,398 L252,436 L238,368 L224,306 Z" />
+              <circle class="land" data-region="latam" cx="238" cy="228" r="9" tabindex="0" role="button" aria-label="Caribe" />
+              <circle class="land" data-region="latam" cx="262" cy="222" r="7" tabindex="0" role="button" aria-label="Caribe" />
+              <!-- Europa -->
+              <path class="land" data-region="eu" tabindex="0" role="button" aria-label="Europa"
+                d="M462,102 L512,72 L560,80 L566,112 L602,102 L618,132 L566,158 L528,150 L508,180 L486,168 L470,140 Z" />
+              <!-- África -->
+              <path class="land" data-region="af" tabindex="0" role="button" aria-label="África"
+                d="M468,196 L540,178 L596,204 L606,268 L572,348 L524,376 L492,306 L464,244 Z" />
+              <!-- Asia -->
+              <path class="land" data-region="as" tabindex="0" role="button" aria-label="Asia"
+                d="M626,84 L724,54 L852,66 L936,116 L906,168 L838,168 L812,214 L770,226 L742,176 L700,168 L648,156 L622,122 Z" />
+              <path class="land" data-region="as" tabindex="0" role="button" aria-label="Sudeste Asiático"
+                d="M772,232 L800,228 L806,268 L790,300 L776,262 Z" />
+              <!-- Oceanía -->
+              <path class="land" data-region="oc" tabindex="0" role="button" aria-label="Oceanía"
+                d="M828,308 L898,290 L952,312 L924,350 L852,344 Z" />
+              <path class="land" data-region="oc" tabindex="0" role="button" aria-label="Nueva Zelanda"
+                d="M948,368 L968,362 L962,392 L946,386 Z" />
+              <text x="180" y="140" font-size="21" text-anchor="middle" data-region-label="na">América del Norte</text>
+              <text x="180" y="164" font-size="14" class="count" text-anchor="middle" data-region-count="na"></text>
+              <text x="264" y="300" font-size="18" text-anchor="middle" data-region-label2="latam"><tspan x="264">América</tspan><tspan x="264" dy="21">Latina</tspan></text>
+              <text x="264" y="346" font-size="14" class="count" text-anchor="middle" data-region-count="latam"></text>
+              <text x="540" y="128" font-size="20" text-anchor="middle" data-region-label="eu">Europa</text>
+              <text x="540" y="150" font-size="14" class="count" text-anchor="middle" data-region-count="eu"></text>
+              <text x="536" y="272" font-size="20" text-anchor="middle" data-region-label="af">África</text>
+              <text x="536" y="294" font-size="14" class="count" text-anchor="middle" data-region-count="af"></text>
+              <text x="778" y="128" font-size="21" text-anchor="middle" data-region-label="as">Asia</text>
+              <text x="778" y="152" font-size="14" class="count" text-anchor="middle" data-region-count="as"></text>
+              <text x="890" y="322" font-size="19" text-anchor="middle" data-region-label="oc">Oceanía</text>
+              <text x="890" y="344" font-size="14" class="count" text-anchor="middle" data-region-count="oc"></text>
+            </svg>
+          </div>
+          <div class="region-chips" id="region-chips"></div>
+        </div>
+
+        <div class="card">
+          <div class="board-head">
+            <h2 data-i18n="bestScores">Mejores puntajes</h2>
+            <span class="pill" id="board-source">…</span>
+          </div>
+          <div id="board-wrap"></div>
+        </div>
+
+        <footer data-i18n="foot">Los puntajes se guardan en el archivo «Puntajes-Paises-Capitales.xlsx» de tu OneDrive.</footer>
+      </section>
+
+      <!-- ================= PANTALLA DE JUEGO ================= -->
+      <section id="screen-game" class="hidden">
+        <div class="game-top">
+          <h2 id="game-region">Europa</h2>
+          <button class="btn ghost" id="btn-quit" data-i18n="quit">Abandonar partida</button>
+        </div>
+        <div class="hud">
+          <div class="stat"><small data-i18n="hQuestion">Pregunta</small><span id="hud-q">1 / 10</span></div>
+          <div class="stat"><small data-i18n="hScore">Puntaje</small><span id="hud-score">0</span></div>
+          <div class="stat"><small data-i18n="hStreak">Racha</small><span id="hud-streak">0</span></div>
+          <div class="stat" id="hud-hearts-wrap"><small data-i18n="hLives">Errores permitidos</small><span class="hearts" id="hud-hearts"></span></div>
+        </div>
+        <div class="progress"><div id="progress-bar"></div></div>
+        <div class="card">
+          <div class="q-flag" id="q-flag">🏳️</div>
+          <h2 class="q-country" id="q-country">—</h2>
+          <p class="q-ask" data-i18n="askCapital">¿Cuál es su capital?</p>
+          <div class="options" id="options"></div>
+          <p class="feedback" id="feedback"></p>
+        </div>
+      </section>
+
+      <!-- ================= PANTALLA FINAL ================= -->
+      <section id="screen-end" class="hidden">
+        <div class="card">
+          <h2 style="text-align:center" id="end-title" data-i18n="endTitle">¡Partida terminada!</h2>
+          <div class="final-score">
+            <div class="big" id="end-score">0</div>
+            <div data-i18n="endPoints">puntos</div>
+          </div>
+          <div class="final-stats">
+            <div class="stat"><small data-i18n="hCorrect">Aciertos</small><span id="end-correct">0 / 10</span></div>
+            <div class="stat"><small data-i18n="hRegion">Región</small><span id="end-region">—</span></div>
+            <div class="stat"><small data-i18n="hPlayer">Jugador</small><span id="end-player">—</span></div>
+          </div>
+          <p class="sync-note" id="end-sync" style="text-align:center"></p>
+          <div class="actions">
+            <button class="btn primary" id="btn-again" data-i18n="playAgain">Jugar otra vez esta región</button>
+            <button class="btn" id="btn-home" data-i18n="changeRegion">Cambiar de región</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="board-head">
+            <h2 data-i18n="bestScores">Mejores puntajes</h2>
+            <span class="pill" id="board-source-2">…</span>
+          </div>
+          <div id="board-wrap-2"></div>
+        </div>
+      </section>
+    </main>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    "use strict";
+    /* ==================== DATOS: países y capitales (ES / EN / FR) ==================== */
+    /* r: eu Europa · af África · as Asia · na América del Norte · latam América Latina y el Caribe · oc Oceanía */
+    var COUNTRIES = [
+      /* ---- Europa ---- */
+      {c:"ES",r:"eu",es:["España","Madrid"],en:["Spain","Madrid"],fr:["Espagne","Madrid"]},
+      {c:"FR",r:"eu",es:["Francia","París"],en:["France","Paris"],fr:["France","Paris"]},
+      {c:"DE",r:"eu",es:["Alemania","Berlín"],en:["Germany","Berlin"],fr:["Allemagne","Berlin"]},
+      {c:"IT",r:"eu",es:["Italia","Roma"],en:["Italy","Rome"],fr:["Italie","Rome"]},
+      {c:"GB",r:"eu",es:["Reino Unido","Londres"],en:["United Kingdom","London"],fr:["Royaume-Uni","Londres"]},
+      {c:"PT",r:"eu",es:["Portugal","Lisboa"],en:["Portugal","Lisbon"],fr:["Portugal","Lisbonne"]},
+      {c:"NL",r:"eu",es:["Países Bajos","Ámsterdam"],en:["Netherlands","Amsterdam"],fr:["Pays-Bas","Amsterdam"]},
+      {c:"BE",r:"eu",es:["Bélgica","Bruselas"],en:["Belgium","Brussels"],fr:["Belgique","Bruxelles"]},
+      {c:"CH",r:"eu",es:["Suiza","Berna"],en:["Switzerland","Bern"],fr:["Suisse","Berne"]},
+      {c:"AT",r:"eu",es:["Austria","Viena"],en:["Austria","Vienna"],fr:["Autriche","Vienne"]},
+      {c:"PL",r:"eu",es:["Polonia","Varsovia"],en:["Poland","Warsaw"],fr:["Pologne","Varsovie"]},
+      {c:"CZ",r:"eu",es:["Chequia","Praga"],en:["Czechia","Prague"],fr:["Tchéquie","Prague"]},
+      {c:"SK",r:"eu",es:["Eslovaquia","Bratislava"],en:["Slovakia","Bratislava"],fr:["Slovaquie","Bratislava"]},
+      {c:"HU",r:"eu",es:["Hungría","Budapest"],en:["Hungary","Budapest"],fr:["Hongrie","Budapest"]},
+      {c:"GR",r:"eu",es:["Grecia","Atenas"],en:["Greece","Athens"],fr:["Grèce","Athènes"]},
+      {c:"SE",r:"eu",es:["Suecia","Estocolmo"],en:["Sweden","Stockholm"],fr:["Suède","Stockholm"]},
+      {c:"NO",r:"eu",es:["Noruega","Oslo"],en:["Norway","Oslo"],fr:["Norvège","Oslo"]},
+      {c:"DK",r:"eu",es:["Dinamarca","Copenhague"],en:["Denmark","Copenhagen"],fr:["Danemark","Copenhague"]},
+      {c:"FI",r:"eu",es:["Finlandia","Helsinki"],en:["Finland","Helsinki"],fr:["Finlande","Helsinki"]},
+      {c:"IE",r:"eu",es:["Irlanda","Dublín"],en:["Ireland","Dublin"],fr:["Irlande","Dublin"]},
+      {c:"IS",r:"eu",es:["Islandia","Reikiavik"],en:["Iceland","Reykjavik"],fr:["Islande","Reykjavik"]},
+      {c:"EE",r:"eu",es:["Estonia","Tallin"],en:["Estonia","Tallinn"],fr:["Estonie","Tallinn"]},
+      {c:"LV",r:"eu",es:["Letonia","Riga"],en:["Latvia","Riga"],fr:["Lettonie","Riga"]},
+      {c:"LT",r:"eu",es:["Lituania","Vilna"],en:["Lithuania","Vilnius"],fr:["Lituanie","Vilnius"]},
+      {c:"HR",r:"eu",es:["Croacia","Zagreb"],en:["Croatia","Zagreb"],fr:["Croatie","Zagreb"]},
+      {c:"SI",r:"eu",es:["Eslovenia","Liubliana"],en:["Slovenia","Ljubljana"],fr:["Slovénie","Ljubljana"]},
+      {c:"RS",r:"eu",es:["Serbia","Belgrado"],en:["Serbia","Belgrade"],fr:["Serbie","Belgrade"]},
+      {c:"BA",r:"eu",es:["Bosnia y Herzegovina","Sarajevo"],en:["Bosnia and Herzegovina","Sarajevo"],fr:["Bosnie-Herzégovine","Sarajevo"]},
+      {c:"ME",r:"eu",es:["Montenegro","Podgorica"],en:["Montenegro","Podgorica"],fr:["Monténégro","Podgorica"]},
+      {c:"AL",r:"eu",es:["Albania","Tirana"],en:["Albania","Tirana"],fr:["Albanie","Tirana"]},
+      {c:"MK",r:"eu",es:["Macedonia del Norte","Skopie"],en:["North Macedonia","Skopje"],fr:["Macédoine du Nord","Skopje"]},
+      {c:"BG",r:"eu",es:["Bulgaria","Sofía"],en:["Bulgaria","Sofia"],fr:["Bulgarie","Sofia"]},
+      {c:"RO",r:"eu",es:["Rumania","Bucarest"],en:["Romania","Bucharest"],fr:["Roumanie","Bucarest"]},
+      {c:"MD",r:"eu",es:["Moldavia","Chisináu"],en:["Moldova","Chisinau"],fr:["Moldavie","Chisinau"]},
+      {c:"UA",r:"eu",es:["Ucrania","Kiev"],en:["Ukraine","Kyiv"],fr:["Ukraine","Kiev"]},
+      {c:"BY",r:"eu",es:["Bielorrusia","Minsk"],en:["Belarus","Minsk"],fr:["Biélorussie","Minsk"]},
+      {c:"RU",r:"eu",es:["Rusia","Moscú"],en:["Russia","Moscow"],fr:["Russie","Moscou"]},
+      {c:"MT",r:"eu",es:["Malta","La Valeta"],en:["Malta","Valletta"],fr:["Malte","La Valette"]},
+      {c:"LU",r:"eu",es:["Luxemburgo","Luxemburgo"],en:["Luxembourg","Luxembourg"],fr:["Luxembourg","Luxembourg"]},
+      {c:"AD",r:"eu",es:["Andorra","Andorra la Vieja"],en:["Andorra","Andorra la Vella"],fr:["Andorre","Andorre-la-Vieille"]},
+      {c:"MC",r:"eu",es:["Mónaco","Mónaco"],en:["Monaco","Monaco"],fr:["Monaco","Monaco"]},
+      {c:"CY",r:"eu",es:["Chipre","Nicosia"],en:["Cyprus","Nicosia"],fr:["Chypre","Nicosie"]},
+      /* ---- África ---- */
+      {c:"MA",r:"af",es:["Marruecos","Rabat"],en:["Morocco","Rabat"],fr:["Maroc","Rabat"]},
+      {c:"DZ",r:"af",es:["Argelia","Argel"],en:["Algeria","Algiers"],fr:["Algérie","Alger"]},
+      {c:"TN",r:"af",es:["Túnez","Túnez"],en:["Tunisia","Tunis"],fr:["Tunisie","Tunis"]},
+      {c:"LY",r:"af",es:["Libia","Trípoli"],en:["Libya","Tripoli"],fr:["Libye","Tripoli"]},
+      {c:"EG",r:"af",es:["Egipto","El Cairo"],en:["Egypt","Cairo"],fr:["Égypte","Le Caire"]},
+      {c:"SD",r:"af",es:["Sudán","Jartum"],en:["Sudan","Khartoum"],fr:["Soudan","Khartoum"]},
+      {c:"ET",r:"af",es:["Etiopía","Adís Abeba"],en:["Ethiopia","Addis Ababa"],fr:["Éthiopie","Addis-Abeba"]},
+      {c:"KE",r:"af",es:["Kenia","Nairobi"],en:["Kenya","Nairobi"],fr:["Kenya","Nairobi"]},
+      {c:"TZ",r:"af",es:["Tanzania","Dodoma"],en:["Tanzania","Dodoma"],fr:["Tanzanie","Dodoma"]},
+      {c:"UG",r:"af",es:["Uganda","Kampala"],en:["Uganda","Kampala"],fr:["Ouganda","Kampala"]},
+      {c:"NG",r:"af",es:["Nigeria","Abuya"],en:["Nigeria","Abuja"],fr:["Nigéria","Abuja"]},
+      {c:"GH",r:"af",es:["Ghana","Acra"],en:["Ghana","Accra"],fr:["Ghana","Accra"]},
+      {c:"CI",r:"af",es:["Costa de Marfil","Yamusukro"],en:["Côte d'Ivoire","Yamoussoukro"],fr:["Côte d'Ivoire","Yamoussoukro"]},
+      {c:"SN",r:"af",es:["Senegal","Dakar"],en:["Senegal","Dakar"],fr:["Sénégal","Dakar"]},
+      {c:"ML",r:"af",es:["Mali","Bamako"],en:["Mali","Bamako"],fr:["Mali","Bamako"]},
+      {c:"AO",r:"af",es:["Angola","Luanda"],en:["Angola","Luanda"],fr:["Angola","Luanda"]},
+      {c:"ZM",r:"af",es:["Zambia","Lusaka"],en:["Zambia","Lusaka"],fr:["Zambie","Lusaka"]},
+      {c:"ZW",r:"af",es:["Zimbabue","Harare"],en:["Zimbabwe","Harare"],fr:["Zimbabwe","Harare"]},
+      {c:"MZ",r:"af",es:["Mozambique","Maputo"],en:["Mozambique","Maputo"],fr:["Mozambique","Maputo"]},
+      {c:"ZA",r:"af",es:["Sudáfrica","Pretoria"],en:["South Africa","Pretoria"],fr:["Afrique du Sud","Pretoria"]},
+      {c:"MG",r:"af",es:["Madagascar","Antananarivo"],en:["Madagascar","Antananarivo"],fr:["Madagascar","Antananarivo"]},
+      {c:"CM",r:"af",es:["Camerún","Yaundé"],en:["Cameroon","Yaoundé"],fr:["Cameroun","Yaoundé"]},
+      {c:"CD",r:"af",es:["R. D. del Congo","Kinsasa"],en:["DR Congo","Kinshasa"],fr:["RD Congo","Kinshasa"]},
+      {c:"CG",r:"af",es:["Congo","Brazzaville"],en:["Congo","Brazzaville"],fr:["Congo","Brazzaville"]},
+      {c:"GA",r:"af",es:["Gabón","Libreville"],en:["Gabon","Libreville"],fr:["Gabon","Libreville"]},
+      {c:"GN",r:"af",es:["Guinea","Conakri"],en:["Guinea","Conakry"],fr:["Guinée","Conakry"]},
+      {c:"BF",r:"af",es:["Burkina Faso","Uagadugú"],en:["Burkina Faso","Ouagadougou"],fr:["Burkina Faso","Ouagadougou"]},
+      {c:"NE",r:"af",es:["Níger","Niamey"],en:["Niger","Niamey"],fr:["Niger","Niamey"]},
+      {c:"TD",r:"af",es:["Chad","Yamena"],en:["Chad","N'Djamena"],fr:["Tchad","N'Djamena"]},
+      {c:"MR",r:"af",es:["Mauritania","Nuakchot"],en:["Mauritania","Nouakchott"],fr:["Mauritanie","Nouakchott"]},
+      {c:"RW",r:"af",es:["Ruanda","Kigali"],en:["Rwanda","Kigali"],fr:["Rwanda","Kigali"]},
+      {c:"SO",r:"af",es:["Somalia","Mogadiscio"],en:["Somalia","Mogadishu"],fr:["Somalie","Mogadiscio"]},
+      {c:"ER",r:"af",es:["Eritrea","Asmara"],en:["Eritrea","Asmara"],fr:["Érythrée","Asmara"]},
+      {c:"DJ",r:"af",es:["Yibuti","Yibuti"],en:["Djibouti","Djibouti"],fr:["Djibouti","Djibouti"]},
+      {c:"NA",r:"af",es:["Namibia","Windhoek"],en:["Namibia","Windhoek"],fr:["Namibie","Windhoek"]},
+      {c:"BW",r:"af",es:["Botsuana","Gaborone"],en:["Botswana","Gaborone"],fr:["Botswana","Gaborone"]},
+      {c:"LS",r:"af",es:["Lesoto","Maseru"],en:["Lesotho","Maseru"],fr:["Lesotho","Maseru"]},
+      {c:"MW",r:"af",es:["Malaui","Lilongüe"],en:["Malawi","Lilongwe"],fr:["Malawi","Lilongwe"]},
+      {c:"SL",r:"af",es:["Sierra Leona","Freetown"],en:["Sierra Leone","Freetown"],fr:["Sierra Leone","Freetown"]},
+      {c:"LR",r:"af",es:["Liberia","Monrovia"],en:["Liberia","Monrovia"],fr:["Libéria","Monrovia"]},
+      {c:"BJ",r:"af",es:["Benín","Porto Novo"],en:["Benin","Porto-Novo"],fr:["Bénin","Porto-Novo"]},
+      {c:"TG",r:"af",es:["Togo","Lomé"],en:["Togo","Lomé"],fr:["Togo","Lomé"]},
+      {c:"CV",r:"af",es:["Cabo Verde","Praia"],en:["Cape Verde","Praia"],fr:["Cap-Vert","Praia"]},
+      {c:"MU",r:"af",es:["Mauricio","Puerto Louis"],en:["Mauritius","Port Louis"],fr:["Maurice","Port-Louis"]},
+      {c:"SC",r:"af",es:["Seychelles","Victoria"],en:["Seychelles","Victoria"],fr:["Seychelles","Victoria"]},
+      {c:"KM",r:"af",es:["Comoras","Moroni"],en:["Comoros","Moroni"],fr:["Comores","Moroni"]},
+      /* ---- Asia ---- */
+      {c:"JP",r:"as",es:["Japón","Tokio"],en:["Japan","Tokyo"],fr:["Japon","Tokyo"]},
+      {c:"CN",r:"as",es:["China","Pekín"],en:["China","Beijing"],fr:["Chine","Pékin"]},
+      {c:"KR",r:"as",es:["Corea del Sur","Seúl"],en:["South Korea","Seoul"],fr:["Corée du Sud","Séoul"]},
+      {c:"KP",r:"as",es:["Corea del Norte","Pionyang"],en:["North Korea","Pyongyang"],fr:["Corée du Nord","Pyongyang"]},
+      {c:"MN",r:"as",es:["Mongolia","Ulán Bator"],en:["Mongolia","Ulaanbaatar"],fr:["Mongolie","Oulan-Bator"]},
+      {c:"IN",r:"as",es:["India","Nueva Delhi"],en:["India","New Delhi"],fr:["Inde","New Delhi"]},
+      {c:"PK",r:"as",es:["Pakistán","Islamabad"],en:["Pakistan","Islamabad"],fr:["Pakistan","Islamabad"]},
+      {c:"BD",r:"as",es:["Bangladés","Daca"],en:["Bangladesh","Dhaka"],fr:["Bangladesh","Dacca"]},
+      {c:"NP",r:"as",es:["Nepal","Katmandú"],en:["Nepal","Kathmandu"],fr:["Népal","Katmandou"]},
+      {c:"LK",r:"as",es:["Sri Lanka","Sri Jayawardenepura Kotte"],en:["Sri Lanka","Sri Jayawardenepura Kotte"],fr:["Sri Lanka","Sri Jayawardenepura Kotte"]},
+      {c:"BT",r:"as",es:["Bután","Timbu"],en:["Bhutan","Thimphu"],fr:["Bhoutan","Thimphou"]},
+      {c:"MM",r:"as",es:["Myanmar","Naipyidó"],en:["Myanmar","Naypyidaw"],fr:["Myanmar","Naypyidaw"]},
+      {c:"TH",r:"as",es:["Tailandia","Bangkok"],en:["Thailand","Bangkok"],fr:["Thaïlande","Bangkok"]},
+      {c:"VN",r:"as",es:["Vietnam","Hanói"],en:["Vietnam","Hanoi"],fr:["Vietnam","Hanoï"]},
+      {c:"KH",r:"as",es:["Camboya","Nom Pen"],en:["Cambodia","Phnom Penh"],fr:["Cambodge","Phnom Penh"]},
+      {c:"LA",r:"as",es:["Laos","Vientián"],en:["Laos","Vientiane"],fr:["Laos","Vientiane"]},
+      {c:"MY",r:"as",es:["Malasia","Kuala Lumpur"],en:["Malaysia","Kuala Lumpur"],fr:["Malaisie","Kuala Lumpur"]},
+      {c:"SG",r:"as",es:["Singapur","Singapur"],en:["Singapore","Singapore"],fr:["Singapour","Singapour"]},
+      {c:"ID",r:"as",es:["Indonesia","Yakarta"],en:["Indonesia","Jakarta"],fr:["Indonésie","Jakarta"]},
+      {c:"PH",r:"as",es:["Filipinas","Manila"],en:["Philippines","Manila"],fr:["Philippines","Manille"]},
+      {c:"BN",r:"as",es:["Brunéi","Bandar Seri Begawan"],en:["Brunei","Bandar Seri Begawan"],fr:["Brunei","Bandar Seri Begawan"]},
+      {c:"TL",r:"as",es:["Timor Oriental","Dili"],en:["Timor-Leste","Dili"],fr:["Timor oriental","Dili"]},
+      {c:"KZ",r:"as",es:["Kazajistán","Astaná"],en:["Kazakhstan","Astana"],fr:["Kazakhstan","Astana"]},
+      {c:"UZ",r:"as",es:["Uzbekistán","Taskent"],en:["Uzbekistan","Tashkent"],fr:["Ouzbékistan","Tachkent"]},
+      {c:"TM",r:"as",es:["Turkmenistán","Asjabad"],en:["Turkmenistan","Ashgabat"],fr:["Turkménistan","Achgabat"]},
+      {c:"KG",r:"as",es:["Kirguistán","Biskek"],en:["Kyrgyzstan","Bishkek"],fr:["Kirghizistan","Bichkek"]},
+      {c:"TJ",r:"as",es:["Tayikistán","Dusambé"],en:["Tajikistan","Dushanbe"],fr:["Tadjikistan","Douchanbé"]},
+      {c:"AF",r:"as",es:["Afganistán","Kabul"],en:["Afghanistan","Kabul"],fr:["Afghanistan","Kaboul"]},
+      {c:"IR",r:"as",es:["Irán","Teherán"],en:["Iran","Tehran"],fr:["Iran","Téhéran"]},
+      {c:"IQ",r:"as",es:["Irak","Bagdad"],en:["Iraq","Baghdad"],fr:["Irak","Bagdad"]},
+      {c:"SA",r:"as",es:["Arabia Saudita","Riad"],en:["Saudi Arabia","Riyadh"],fr:["Arabie saoudite","Riyad"]},
+      {c:"YE",r:"as",es:["Yemen","Saná"],en:["Yemen","Sanaa"],fr:["Yémen","Sanaa"]},
+      {c:"OM",r:"as",es:["Omán","Mascate"],en:["Oman","Muscat"],fr:["Oman","Mascate"]},
+      {c:"AE",r:"as",es:["Emiratos Árabes Unidos","Abu Dabi"],en:["United Arab Emirates","Abu Dhabi"],fr:["Émirats arabes unis","Abou Dhabi"]},
+      {c:"QA",r:"as",es:["Catar","Doha"],en:["Qatar","Doha"],fr:["Qatar","Doha"]},
+      {c:"KW",r:"as",es:["Kuwait","Kuwait"],en:["Kuwait","Kuwait City"],fr:["Koweït","Koweït"]},
+      {c:"BH",r:"as",es:["Baréin","Manama"],en:["Bahrain","Manama"],fr:["Bahreïn","Manama"]},
+      {c:"JO",r:"as",es:["Jordania","Amán"],en:["Jordan","Amman"],fr:["Jordanie","Amman"]},
+      {c:"LB",r:"as",es:["Líbano","Beirut"],en:["Lebanon","Beirut"],fr:["Liban","Beyrouth"]},
+      {c:"SY",r:"as",es:["Siria","Damasco"],en:["Syria","Damascus"],fr:["Syrie","Damas"]},
+      {c:"IL",r:"as",es:["Israel","Jerusalén"],en:["Israel","Jerusalem"],fr:["Israël","Jérusalem"]},
+      {c:"TR",r:"as",es:["Turquía","Ankara"],en:["Türkiye","Ankara"],fr:["Turquie","Ankara"]},
+      {c:"GE",r:"as",es:["Georgia","Tiflis"],en:["Georgia","Tbilisi"],fr:["Géorgie","Tbilissi"]},
+      {c:"AM",r:"as",es:["Armenia","Ereván"],en:["Armenia","Yerevan"],fr:["Arménie","Erevan"]},
+      {c:"AZ",r:"as",es:["Azerbaiyán","Bakú"],en:["Azerbaijan","Baku"],fr:["Azerbaïdjan","Bakou"]},
+      /* ---- América del Norte ---- */
+      {c:"CA",r:"na",es:["Canadá","Ottawa"],en:["Canada","Ottawa"],fr:["Canada","Ottawa"]},
+      {c:"US",r:"na",es:["Estados Unidos","Washington D. C."],en:["United States","Washington, D.C."],fr:["États-Unis","Washington, D.C."]},
+      {c:"MX",r:"na",es:["México","Ciudad de México"],en:["Mexico","Mexico City"],fr:["Mexique","Mexico"]},
+      {c:"GT",r:"na",es:["Guatemala","Ciudad de Guatemala"],en:["Guatemala","Guatemala City"],fr:["Guatemala","Guatemala"]},
+      {c:"BZ",r:"na",es:["Belice","Belmopán"],en:["Belize","Belmopan"],fr:["Belize","Belmopan"]},
+      {c:"HN",r:"na",es:["Honduras","Tegucigalpa"],en:["Honduras","Tegucigalpa"],fr:["Honduras","Tegucigalpa"]},
+      {c:"SV",r:"na",es:["El Salvador","San Salvador"],en:["El Salvador","San Salvador"],fr:["Salvador","San Salvador"]},
+      {c:"NI",r:"na",es:["Nicaragua","Managua"],en:["Nicaragua","Managua"],fr:["Nicaragua","Managua"]},
+      {c:"CR",r:"na",es:["Costa Rica","San José"],en:["Costa Rica","San José"],fr:["Costa Rica","San José"]},
+      {c:"PA",r:"na",es:["Panamá","Ciudad de Panamá"],en:["Panama","Panama City"],fr:["Panama","Panama"]},
+      /* ---- América Latina y el Caribe ---- */
+      {c:"CO",r:"latam",es:["Colombia","Bogotá"],en:["Colombia","Bogotá"],fr:["Colombie","Bogota"]},
+      {c:"VE",r:"latam",es:["Venezuela","Caracas"],en:["Venezuela","Caracas"],fr:["Venezuela","Caracas"]},
+      {c:"EC",r:"latam",es:["Ecuador","Quito"],en:["Ecuador","Quito"],fr:["Équateur","Quito"]},
+      {c:"PE",r:"latam",es:["Perú","Lima"],en:["Peru","Lima"],fr:["Pérou","Lima"]},
+      {c:"BO",r:"latam",es:["Bolivia","Sucre"],en:["Bolivia","Sucre"],fr:["Bolivie","Sucre"]},
+      {c:"CL",r:"latam",es:["Chile","Santiago"],en:["Chile","Santiago"],fr:["Chili","Santiago"]},
+      {c:"AR",r:"latam",es:["Argentina","Buenos Aires"],en:["Argentina","Buenos Aires"],fr:["Argentine","Buenos Aires"]},
+      {c:"PY",r:"latam",es:["Paraguay","Asunción"],en:["Paraguay","Asunción"],fr:["Paraguay","Asuncion"]},
+      {c:"UY",r:"latam",es:["Uruguay","Montevideo"],en:["Uruguay","Montevideo"],fr:["Uruguay","Montevideo"]},
+      {c:"BR",r:"latam",es:["Brasil","Brasilia"],en:["Brazil","Brasília"],fr:["Brésil","Brasilia"]},
+      {c:"GY",r:"latam",es:["Guyana","Georgetown"],en:["Guyana","Georgetown"],fr:["Guyana","Georgetown"]},
+      {c:"SR",r:"latam",es:["Surinam","Paramaribo"],en:["Suriname","Paramaribo"],fr:["Suriname","Paramaribo"]},
+      {c:"CU",r:"latam",es:["Cuba","La Habana"],en:["Cuba","Havana"],fr:["Cuba","La Havane"]},
+      {c:"JM",r:"latam",es:["Jamaica","Kingston"],en:["Jamaica","Kingston"],fr:["Jamaïque","Kingston"]},
+      {c:"HT",r:"latam",es:["Haití","Puerto Príncipe"],en:["Haiti","Port-au-Prince"],fr:["Haïti","Port-au-Prince"]},
+      {c:"DO",r:"latam",es:["República Dominicana","Santo Domingo"],en:["Dominican Republic","Santo Domingo"],fr:["République dominicaine","Saint-Domingue"]},
+      {c:"BS",r:"latam",es:["Bahamas","Nasáu"],en:["Bahamas","Nassau"],fr:["Bahamas","Nassau"]},
+      {c:"TT",r:"latam",es:["Trinidad y Tobago","Puerto España"],en:["Trinidad and Tobago","Port of Spain"],fr:["Trinité-et-Tobago","Port-d'Espagne"]},
+      {c:"BB",r:"latam",es:["Barbados","Bridgetown"],en:["Barbados","Bridgetown"],fr:["Barbade","Bridgetown"]},
+      {c:"GD",r:"latam",es:["Granada","Saint George"],en:["Grenada","St. George's"],fr:["Grenade","Saint-Georges"]},
+      {c:"LC",r:"latam",es:["Santa Lucía","Castries"],en:["Saint Lucia","Castries"],fr:["Sainte-Lucie","Castries"]},
+      {c:"AG",r:"latam",es:["Antigua y Barbuda","Saint John"],en:["Antigua and Barbuda","St. John's"],fr:["Antigua-et-Barbuda","Saint John's"]},
+      /* ---- Oceanía ---- */
+      {c:"AU",r:"oc",es:["Australia","Camberra"],en:["Australia","Canberra"],fr:["Australie","Canberra"]},
+      {c:"NZ",r:"oc",es:["Nueva Zelanda","Wellington"],en:["New Zealand","Wellington"],fr:["Nouvelle-Zélande","Wellington"]},
+      {c:"PG",r:"oc",es:["Papúa Nueva Guinea","Puerto Moresby"],en:["Papua New Guinea","Port Moresby"],fr:["Papouasie-Nouvelle-Guinée","Port Moresby"]},
+      {c:"FJ",r:"oc",es:["Fiyi","Suva"],en:["Fiji","Suva"],fr:["Fidji","Suva"]},
+      {c:"SB",r:"oc",es:["Islas Salomón","Honiara"],en:["Solomon Islands","Honiara"],fr:["Îles Salomon","Honiara"]},
+      {c:"VU",r:"oc",es:["Vanuatu","Puerto Vila"],en:["Vanuatu","Port Vila"],fr:["Vanuatu","Port-Vila"]},
+      {c:"WS",r:"oc",es:["Samoa","Apia"],en:["Samoa","Apia"],fr:["Samoa","Apia"]},
+      {c:"TO",r:"oc",es:["Tonga","Nukualofa"],en:["Tonga","Nuku'alofa"],fr:["Tonga","Nuku'alofa"]},
+      {c:"KI",r:"oc",es:["Kiribati","Tarawa Sur"],en:["Kiribati","South Tarawa"],fr:["Kiribati","Tarawa-Sud"]},
+      {c:"FM",r:"oc",es:["Micronesia","Palikir"],en:["Micronesia","Palikir"],fr:["Micronésie","Palikir"]},
+      {c:"MH",r:"oc",es:["Islas Marshall","Majuro"],en:["Marshall Islands","Majuro"],fr:["Îles Marshall","Majuro"]},
+      {c:"PW",r:"oc",es:["Palaos","Ngerulmud"],en:["Palau","Ngerulmud"],fr:["Palaos","Ngerulmud"]},
+      {c:"NR",r:"oc",es:["Nauru","Yaren"],en:["Nauru","Yaren"],fr:["Nauru","Yaren"]},
+      {c:"TV",r:"oc",es:["Tuvalu","Funafuti"],en:["Tuvalu","Funafuti"],fr:["Tuvalu","Funafuti"]}
+    ];
+
+    var REGIONS = {
+      eu:    { es: "Europa", en: "Europe", fr: "Europe" },
+      af:    { es: "África", en: "Africa", fr: "Afrique" },
+      as:    { es: "Asia", en: "Asia", fr: "Asie" },
+      na:    { es: "América del Norte", en: "North America", fr: "Amérique du Nord" },
+      latam: { es: "América Latina y el Caribe", en: "Latin America & the Caribbean", fr: "Amérique latine et Caraïbes" },
+      oc:    { es: "Oceanía", en: "Oceania", fr: "Océanie" },
+      world: { es: "Todo el mundo", en: "Whole world", fr: "Le monde entier" }
+    };
+
+    var I18N = {
+      es: {
+        title: "Países y Capitales",
+        lede: "Toca un continente en el mapa y demuestra cuánto sabes de capitales del mundo. Cada partida suma a la tabla de mejores puntajes.",
+        accLoading: "Conectando…", accDetailLoading: "Revisando tu sesión de Microsoft",
+        signIn: "Iniciar sesión con Microsoft", signOut: "Cerrar sesión",
+        accNone: "Sin sesión de Microsoft",
+        accNoneDetail: "Inicia sesión para guardar tus puntajes en el Excel de tu OneDrive.",
+        accFirstTime: "La primera vez, Microsoft te pedirá tu cuenta y permiso para la carpeta de la app en OneDrive.",
+        syncNow: "Sincronizar puntajes ahora",
+        settings: "Configuración", settingsSub: "Ajusta la partida antes de tocar un continente.",
+        playerName: "Tu nombre", playerNamePh: "Ej. Jaime",
+        language: "Idioma", numQuestions: "Número de preguntas", maxErrors: "Errores permitidos", unlimited: "Sin límite",
+        pickRegion: "Elige una región en el mapa", pickRegionSub: "Toca un continente con el dedo y la partida empieza de inmediato.",
+        bestScores: "Mejores puntajes",
+        foot: "Los puntajes se guardan en el archivo «Puntajes-Paises-Capitales.xlsx» de tu OneDrive.",
+        quit: "Abandonar partida",
+        hQuestion: "Pregunta", hScore: "Puntaje", hStreak: "Racha", hLives: "Errores permitidos",
+        hCorrect: "Aciertos", hRegion: "Región", hPlayer: "Jugador",
+        askCapital: "¿Cuál es su capital?",
+        endTitle: "¡Partida terminada!", endTitleOver: "¡Se acabaron los errores permitidos!", endPoints: "puntos",
+        playAgain: "Jugar otra vez esta región", changeRegion: "Cambiar de región",
+        colPlayer: "Jugador", colRegion: "Región", colCorrect: "Aciertos", colScore: "Puntaje", colDate: "Fecha",
+        boardEmpty: "Todavía no hay puntajes. ¡Sé la primera persona en la tabla!",
+        sourceCloud: "OneDrive · Excel", sourceLocal: "Este dispositivo",
+        countries: "países",
+        correctMsg: "¡Correcto!", wrongMsg: "No: la capital es",
+        streakMsg: "¡Racha de {n}!",
+        pendingN: "{n} puntaje(s) esperando sincronizar con OneDrive.",
+        syncedOk: "Puntajes sincronizados con tu OneDrive.",
+        syncFail: "No se pudo sincronizar con OneDrive. Tus puntajes quedan guardados en este dispositivo y se reintentará al iniciar sesión.",
+        endSavedCloud: "Tu puntaje se guardó en el Excel de tu OneDrive. 🎉",
+        endSavedLocal: "Tu puntaje quedó en este dispositivo. Inicia sesión con Microsoft para subirlo al Excel de OneDrive.",
+        guestName: "Invitado",
+        needName: "Jugador",
+        signedInAs: "Sesión iniciada",
+        toastSynced: "Puntajes sincronizados con OneDrive",
+        toastSavedLocal: "Puntaje guardado en este dispositivo",
+        cloudBoardFail: "No se pudo leer el Excel de OneDrive; se muestran los puntajes de este dispositivo.",
+        syncing: "Sincronizando con OneDrive…"
+      },
+      en: {
+        title: "Countries & Capitals",
+        lede: "Tap a continent on the map and show how many world capitals you know. Every game counts toward the leaderboard.",
+        accLoading: "Connecting…", accDetailLoading: "Checking your Microsoft session",
+        signIn: "Sign in with Microsoft", signOut: "Sign out",
+        accNone: "Not signed in to Microsoft",
+        accNoneDetail: "Sign in to save your scores to the Excel file in your OneDrive.",
+        accFirstTime: "The first time, Microsoft will ask for your account and permission for the app folder in OneDrive.",
+        syncNow: "Sync scores now",
+        settings: "Settings", settingsSub: "Set up your game before tapping a continent.",
+        playerName: "Your name", playerNamePh: "E.g. Jaime",
+        language: "Language", numQuestions: "Number of questions", maxErrors: "Mistakes allowed", unlimited: "Unlimited",
+        pickRegion: "Pick a region on the map", pickRegionSub: "Tap a continent with your finger and the game starts right away.",
+        bestScores: "Best scores",
+        foot: "Scores are saved in the “Puntajes-Paises-Capitales.xlsx” file in your OneDrive.",
+        quit: "Quit game",
+        hQuestion: "Question", hScore: "Score", hStreak: "Streak", hLives: "Mistakes allowed",
+        hCorrect: "Correct", hRegion: "Region", hPlayer: "Player",
+        askCapital: "What is its capital?",
+        endTitle: "Game over!", endTitleOver: "Out of allowed mistakes!", endPoints: "points",
+        playAgain: "Play this region again", changeRegion: "Change region",
+        colPlayer: "Player", colRegion: "Region", colCorrect: "Correct", colScore: "Score", colDate: "Date",
+        boardEmpty: "No scores yet. Be the first name on the board!",
+        sourceCloud: "OneDrive · Excel", sourceLocal: "This device",
+        countries: "countries",
+        correctMsg: "Correct!", wrongMsg: "No — the capital is",
+        streakMsg: "Streak of {n}!",
+        pendingN: "{n} score(s) waiting to sync with OneDrive.",
+        syncedOk: "Scores synced with your OneDrive.",
+        syncFail: "Could not sync with OneDrive. Your scores stay on this device and will retry when you sign in.",
+        endSavedCloud: "Your score was saved to the Excel file in your OneDrive. 🎉",
+        endSavedLocal: "Your score is on this device. Sign in with Microsoft to upload it to the OneDrive Excel file.",
+        guestName: "Guest",
+        needName: "Player",
+        signedInAs: "Signed in",
+        toastSynced: "Scores synced with OneDrive",
+        toastSavedLocal: "Score saved on this device",
+        cloudBoardFail: "The OneDrive Excel file could not be read; showing this device's scores.",
+        syncing: "Syncing with OneDrive…"
+      },
+      fr: {
+        title: "Pays et Capitales",
+        lede: "Touchez un continent sur la carte et montrez combien de capitales du monde vous connaissez. Chaque partie compte pour le classement.",
+        accLoading: "Connexion…", accDetailLoading: "Vérification de votre session Microsoft",
+        signIn: "Se connecter avec Microsoft", signOut: "Se déconnecter",
+        accNone: "Pas de session Microsoft",
+        accNoneDetail: "Connectez-vous pour enregistrer vos scores dans le fichier Excel de votre OneDrive.",
+        accFirstTime: "La première fois, Microsoft demandera votre compte et l'accès au dossier de l'application dans OneDrive.",
+        syncNow: "Synchroniser les scores maintenant",
+        settings: "Réglages", settingsSub: "Préparez votre partie avant de toucher un continent.",
+        playerName: "Votre nom", playerNamePh: "Ex. Jaime",
+        language: "Langue", numQuestions: "Nombre de questions", maxErrors: "Erreurs permises", unlimited: "Illimité",
+        pickRegion: "Choisissez une région sur la carte", pickRegionSub: "Touchez un continent du doigt et la partie commence aussitôt.",
+        bestScores: "Meilleurs scores",
+        foot: "Les scores sont enregistrés dans le fichier « Puntajes-Paises-Capitales.xlsx » de votre OneDrive.",
+        quit: "Abandonner la partie",
+        hQuestion: "Question", hScore: "Score", hStreak: "Série", hLives: "Erreurs permises",
+        hCorrect: "Bonnes réponses", hRegion: "Région", hPlayer: "Joueur",
+        askCapital: "Quelle est sa capitale ?",
+        endTitle: "Partie terminée !", endTitleOver: "Plus d'erreurs permises !", endPoints: "points",
+        playAgain: "Rejouer cette région", changeRegion: "Changer de région",
+        colPlayer: "Joueur", colRegion: "Région", colCorrect: "Bonnes rép.", colScore: "Score", colDate: "Date",
+        boardEmpty: "Aucun score pour l'instant. Soyez le premier nom du tableau !",
+        sourceCloud: "OneDrive · Excel", sourceLocal: "Cet appareil",
+        countries: "pays",
+        correctMsg: "Bonne réponse !", wrongMsg: "Non — la capitale est",
+        streakMsg: "Série de {n} !",
+        pendingN: "{n} score(s) en attente de synchronisation avec OneDrive.",
+        syncedOk: "Scores synchronisés avec votre OneDrive.",
+        syncFail: "Impossible de synchroniser avec OneDrive. Vos scores restent sur cet appareil et seront réessayés à la connexion.",
+        endSavedCloud: "Votre score a été enregistré dans le fichier Excel de votre OneDrive. 🎉",
+        endSavedLocal: "Votre score est sur cet appareil. Connectez-vous avec Microsoft pour l'envoyer au fichier Excel OneDrive.",
+        guestName: "Invité",
+        needName: "Joueur",
+        signedInAs: "Session ouverte",
+        toastSynced: "Scores synchronisés avec OneDrive",
+        toastSavedLocal: "Score enregistré sur cet appareil",
+        cloudBoardFail: "Impossible de lire le fichier Excel OneDrive ; affichage des scores de cet appareil.",
+        syncing: "Synchronisation avec OneDrive…"
+      }
+    };
+    </script>
+
+    <script>
+    "use strict";
+    /* ==================== ESTADO ==================== */
+    var LS_SETTINGS = "pc-settings-v1";
+    var LS_LOCAL = "pc-local-scores-v1";      /* todos los puntajes guardados en este dispositivo */
+    var LS_PENDING = "pc-pending-scores-v1";  /* los que aún no están en el Excel de OneDrive */
+
+    var settings = { lang: "es", name: "", count: 10, maxErrors: 3 };
+    try {
+      var saved = JSON.parse(localStorage.getItem(LS_SETTINGS) || "null");
+      if (saved && typeof saved === "object") settings = Object.assign(settings, saved);
+    } catch (e) {}
+    if (!I18N[settings.lang]) settings.lang = "es";
+
+    var localScores = loadList(LS_LOCAL);
+    var pendingScores = loadList(LS_PENDING);
+    var cloudScores = null;        /* null = Excel aún no leído */
+    var cloudError = false;
+    var account = null;
+    var lastGameId = null;
+
+    function loadList(key) {
+      try { var v = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(v) ? v : []; }
+      catch (e) { return []; }
+    }
+    function storeList(key, list) {
+      try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) {}
+    }
+    function $(id) { return document.getElementById(id); }
+    function t(key) { return (I18N[settings.lang] || I18N.es)[key] || I18N.es[key] || key; }
+    function regionName(id) { return (REGIONS[id] || REGIONS.world)[settings.lang]; }
+    function recordKey(r) { return [r.name, r.region, r.score, r.date].join("|"); }
+    function flagEmoji(code) {
+      try {
+        return String.fromCodePoint.apply(null, code.split("").map(function (ch) { return 127397 + ch.charCodeAt(0); }));
+      } catch (e) { return "🌍"; }
+    }
+    function shuffle(a) {
+      var arr = a.slice();
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+      return arr;
+    }
+    var toastTimer = null;
+    function toast(msg) {
+      var el = $("toast"); el.textContent = msg; el.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.classList.remove("show"); }, 3200);
+    }
+
+    /* ==================== IDIOMA / AJUSTES ==================== */
+    function applyI18n() {
+      document.documentElement.lang = settings.lang;
+      document.querySelectorAll("[data-i18n]").forEach(function (el) {
+        var v = t(el.getAttribute("data-i18n"));
+        if (v) el.textContent = v;
+      });
+      document.querySelectorAll("[data-i18n-ph]").forEach(function (el) {
+        var v = t(el.getAttribute("data-i18n-ph"));
+        if (v) el.setAttribute("placeholder", v);
+      });
+      document.querySelectorAll("[data-region-label]").forEach(function (el) {
+        el.textContent = regionName(el.getAttribute("data-region-label"));
+      });
+      document.querySelectorAll("[data-region-label2]").forEach(function (el) {
+        /* Etiqueta del mapa en dos líneas para que quepa en el continente */
+        var short = { es: ["América", "Latina"], en: ["Latin", "America"], fr: ["Amérique", "latine"] }[settings.lang];
+        el.innerHTML = '<tspan x="264">' + short[0] + '</tspan><tspan x="264" dy="21">' + short[1] + "</tspan>";
+      });
+      document.querySelectorAll("[data-region-count]").forEach(function (el) {
+        var id = el.getAttribute("data-region-count");
+        var n = id === "world" ? COUNTRIES.length : COUNTRIES.filter(function (c) { return c.r === id; }).length;
+        el.textContent = n + " " + t("countries");
+      });
+      buildChips();
+      renderAccount();
+      renderBoard();
+    }
+    function buildChips() {
+      var wrap = $("region-chips"); wrap.innerHTML = "";
+      Object.keys(REGIONS).forEach(function (id) {
+        var b = document.createElement("button");
+        b.className = "chip" + (id === "world" ? " world" : "");
+        var n = id === "world" ? COUNTRIES.length : COUNTRIES.filter(function (c) { return c.r === id; }).length;
+        b.textContent = regionName(id) + " · " + n;
+        b.addEventListener("click", function () { startGame(id); });
+        wrap.appendChild(b);
+      });
+    }
+    function saveSettings() { storeList(LS_SETTINGS, {}); try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {} }
+    function bindSettings() {
+      $("set-name").value = settings.name || "";
+      $("set-lang").value = settings.lang;
+      $("set-count").value = String(settings.count);
+      $("set-errors").value = String(settings.maxErrors);
+      $("set-name").addEventListener("input", function () { settings.name = this.value.trim(); saveSettings(); });
+      $("set-lang").addEventListener("change", function () { settings.lang = this.value; saveSettings(); applyI18n(); });
+      $("set-count").addEventListener("change", function () { settings.count = parseInt(this.value, 10) || 10; saveSettings(); });
+      $("set-errors").addEventListener("change", function () { settings.maxErrors = parseInt(this.value, 10) || 0; saveSettings(); });
+    }
+
+    /* ==================== MARCADOR ==================== */
+    function displayScores() {
+      /* Si el Excel ya se leyó, manda la nube; si no, lo local.
+         Los pendientes siempre se mezclan sin duplicar. */
+      var base = cloudScores ? cloudScores.slice() : localScores.slice();
+      var seen = {};
+      base.forEach(function (r) { seen[recordKey(r)] = true; });
+      pendingScores.forEach(function (r) { if (!seen[recordKey(r)]) base.push(r); });
+      base.sort(function (a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.correct !== a.correct) return b.correct - a.correct;
+        return String(a.date) < String(b.date) ? -1 : 1;
+      });
+      return base;
+    }
+    function fmtDate(iso) {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso || "");
+      return d.toLocaleDateString(settings.lang === "en" ? "en-US" : settings.lang === "fr" ? "fr-CA" : "es-MX", { day: "numeric", month: "short", year: "numeric" });
+    }
+    function boardHTML() {
+      var rows = displayScores().slice(0, 20);
+      if (!rows.length) return '<p class="board-empty">' + t("boardEmpty") + "</p>";
+      var html = '<table class="board"><thead><tr><th>#</th><th>' + t("colPlayer") + '</th><th class="c-region">' + t("colRegion") + '</th><th class="num">' + t("colCorrect") + '</th><th class="num">' + t("colScore") + '</th><th class="c-date">' + t("colDate") + "</th></tr></thead><tbody>";
+      rows.forEach(function (r, i) {
+        var mine = lastGameId && recordKey(r) === lastGameId;
+        html += '<tr class="' + (i === 0 ? "top1" : "") + (mine ? " me" : "") + '"><td><span class="rank">' + (i + 1) + "</span></td>" +
+          "<td><b>" + escapeHtml(r.name) + "</b></td>" +
+          '<td class="c-region">' + escapeHtml(r.region) + "</td>" +
+          '<td class="num">' + r.correct + (r.total ? " / " + r.total : "") + "</td>" +
+          '<td class="num"><b>' + r.score + "</b></td>" +
+          '<td class="c-date">' + fmtDate(r.date) + "</td></tr>";
+      });
+      return html + "</tbody></table>";
+    }
+    function escapeHtml(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+      });
+    }
+    function renderBoard() {
+      var html = boardHTML();
+      $("board-wrap").innerHTML = html;
+      $("board-wrap-2").innerHTML = html;
+      var src = cloudScores ? t("sourceCloud") : t("sourceLocal");
+      $("board-source").textContent = src;
+      $("board-source-2").textContent = src;
+      $("board-source").className = "pill" + (cloudScores ? "" : " warn");
+      $("board-source-2").className = "pill" + (cloudScores ? "" : " warn");
+    }
+
+    /* ==================== MICROSOFT: MSAL + GRAPH + EXCEL ==================== */
+    var MSAL_CLIENT_ID = "82cc697d-8b4b-4bff-a761-ca94bdc5f952"; /* misma app registrada del whiteboard */
+    var FILE_SCOPES = ["Files.ReadWrite.AppFolder"];
+    var LOGIN_SCOPES = ["User.Read", "Files.ReadWrite.AppFolder"];
+    var GRAPH = "https://graph.microsoft.com/v1.0";
+    var EXCEL_NAME = "Puntajes-Paises-Capitales.xlsx";
+    var EXCEL_URL = GRAPH + "/me/drive/special/approot:/" + EXCEL_NAME + ":/content";
+    var pca = null;
+    var msalReady = false;
+
+    function initMsal() {
+      if (typeof msal === "undefined") { renderAccount(); return Promise.resolve(); }
+      try {
+        pca = new msal.PublicClientApplication({
+          auth: {
+            clientId: MSAL_CLIENT_ID,
+            authority: "https://login.microsoftonline.com/consumers",
+            redirectUri: window.location.origin + window.location.pathname
+          },
+          cache: { cacheLocation: "localStorage" }
+        });
+      } catch (e) { renderAccount(); return Promise.resolve(); }
+      var ready = (pca.initialize ? pca.initialize() : Promise.resolve());
+      return ready.then(function () {
+        return pca.handleRedirectPromise().catch(function () { return null; });
+      }).then(function (result) {
+        if (result && result.account) pca.setActiveAccount(result.account);
+        var accounts = pca.getAllAccounts();
+        if (accounts.length && !pca.getActiveAccount()) pca.setActiveAccount(accounts[0]);
+        account = pca.getActiveAccount() || accounts[0] || null;
+        msalReady = true;
+        renderAccount();
+        if (account) { loadCloudAndSync(); }
+      }).catch(function () { renderAccount(); });
+    }
+    function getTokenSilent() {
+      if (!pca || !account) return Promise.resolve(null);
+      return pca.acquireTokenSilent({ scopes: FILE_SCOPES, account: account })
+        .then(function (r) { return r.accessToken; })
+        .catch(function () { return null; });
+    }
+    function signIn() {
+      if (!pca) { toast("Microsoft no cargó. Revisa tu conexión."); return; }
+      pca.loginRedirect({ scopes: LOGIN_SCOPES }).catch(function (e) {
+        toast(friendlyAuthError(e));
+      });
+    }
+    function signOut() {
+      if (!pca || !account) return;
+      pca.logoutRedirect({ account: account }).catch(function () {});
+    }
+    function friendlyAuthError(e) {
+      var msg = e && e.message ? e.message : String(e);
+      if (msg.indexOf("interaction_in_progress") >= 0)
+        return "Hay un inicio de sesión atascado en esta pestaña. Ciérrala por completo, vuelve a abrir el juego e inténtalo de nuevo.";
+      return msg;
+    }
+    function renderAccount() {
+      var nameEl = $("account-name"), detEl = $("account-detail"), av = $("account-avatar");
+      var note = $("sync-note"), actions = $("sync-actions");
+      if (account) {
+        var nm = account.name || account.username || "";
+        nameEl.textContent = nm;
+        detEl.textContent = t("signedInAs") + " · " + (account.username || "");
+        av.textContent = (nm.trim().charAt(0) || "✓").toUpperCase();
+        $("btn-signin").classList.add("hidden");
+        $("btn-signout").classList.remove("hidden");
+        if (pendingScores.length) {
+          note.innerHTML = "<b>" + t("pendingN").replace("{n}", pendingScores.length) + "</b>";
+          actions.classList.remove("hidden");
+        } else if (cloudScores) {
+          note.textContent = t("syncedOk");
+          actions.classList.add("hidden");
+        } else {
+          note.textContent = t("syncing");
+          actions.classList.add("hidden");
+        }
+      } else {
+        nameEl.textContent = t("accNone");
+        detEl.textContent = t("accNoneDetail") + " " + t("accFirstTime");
+        av.textContent = "?";
+        $("btn-signin").classList.remove("hidden");
+        $("btn-signout").classList.add("hidden");
+        if (pendingScores.length) {
+          note.innerHTML = "<b>" + t("pendingN").replace("{n}", pendingScores.length) + "</b>";
+        } else { note.textContent = ""; }
+        actions.classList.add("hidden");
+      }
+    }
+
+    /* ---- Excel en OneDrive (vía Graph, carpeta de la app) ---- */
+    function excelAvailable() { return typeof XLSX !== "undefined"; }
+    function downloadExcel(token) {
+      return fetch(EXCEL_URL, { headers: { Authorization: "Bearer " + token } }).then(function (res) {
+        if (res.status === 404) return [];
+        if (!res.ok) throw new Error("Graph " + res.status);
+        return res.arrayBuffer();
+      }).then(function (buf) {
+        if (Array.isArray(buf)) return buf;
+        if (!excelAvailable()) throw new Error("XLSX no disponible");
+        var wb = XLSX.read(new Uint8Array(buf), { type: "array" });
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+        var out = [];
+        for (var i = 1; i < rows.length; i++) {
+          var r = rows[i];
+          if (!r || r[0] == null || r[0] === "") continue;
+          out.push({
+            name: String(r[0]), region: String(r[1] || ""),
+            correct: Number(r[2]) || 0, total: Number(r[3]) || 0,
+            score: Number(r[4]) || 0, date: String(r[5] || "")
+          });
+        }
+        return out;
+      });
+    }
+    function uploadExcel(token, records) {
+      if (!excelAvailable()) return Promise.reject(new Error("XLSX no disponible"));
+      var aoa = [["Nombre", "Región", "Aciertos", "Preguntas", "Puntaje", "Fecha"]];
+      records.forEach(function (r) { aoa.push([r.name, r.region, r.correct, r.total || 0, r.score, r.date]); });
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 22 }];
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Puntajes");
+      var data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      return fetch(EXCEL_URL, {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        },
+        body: new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+      }).then(function (res) {
+        if (!res.ok) throw new Error("Graph " + res.status);
+        return res;
+      });
+    }
+    var syncing = false;
+    function loadCloudAndSync() {
+      if (syncing) return Promise.resolve(false);
+      syncing = true;
+      renderAccount();
+      return getTokenSilent().then(function (token) {
+        if (!token) { syncing = false; renderAccount(); return false; }
+        return downloadExcel(token).then(function (cloud) {
+          cloudScores = cloud; cloudError = false;
+          if (!pendingScores.length) { syncing = false; renderBoard(); renderAccount(); return true; }
+          var seen = {};
+          cloud.forEach(function (r) { seen[recordKey(r)] = true; });
+          var merged = cloud.slice();
+          pendingScores.forEach(function (r) { if (!seen[recordKey(r)]) merged.push(r); });
+          return uploadExcel(token, merged).then(function () {
+            cloudScores = merged;
+            pendingScores = [];
+            storeList(LS_PENDING, pendingScores);
+            /* lo local pasa a reflejar la nube */
+            localScores = merged.slice();
+            storeList(LS_LOCAL, localScores);
+            syncing = false; renderBoard(); renderAccount();
+            toast(t("toastSynced"));
+            return true;
+          });
+        });
+      }).catch(function () {
+        cloudError = true; syncing = false;
+        renderBoard(); renderAccount();
+        return false;
+      });
+    }
+    function saveScoreToCloud(record) {
+      /* Devuelve true si el puntaje quedó en el Excel. */
+      if (!account) return Promise.resolve(false);
+      pendingScores.push(record);
+      storeList(LS_PENDING, pendingScores);
+      return loadCloudAndSync();
+    }
+
+    /* ==================== JUEGO ==================== */
+    var game = null;
+    function showScreen(id) {
+      ["screen-home", "screen-game", "screen-end"].forEach(function (s) {
+        $(s).classList.toggle("hidden", s !== id);
+      });
+      window.scrollTo(0, 0);
+    }
+    function startGame(regionId) {
+      var pool = regionId === "world" ? COUNTRIES.slice() : COUNTRIES.filter(function (c) { return c.r === regionId; });
+      var n = Math.min(settings.count, pool.length);
+      game = {
+        region: regionId,
+        deck: shuffle(pool).slice(0, n),
+        idx: 0, correct: 0, errors: 0, score: 0, streak: 0, locked: false, over: false
+      };
+      $("game-region").textContent = regionName(regionId);
+      showScreen("screen-game");
+      renderQuestion();
+    }
+    function renderQuestion() {
+      var item = game.deck[game.idx];
+      var lang = settings.lang;
+      $("hud-q").textContent = (game.idx + 1) + " / " + game.deck.length;
+      $("hud-score").textContent = game.score;
+      $("hud-streak").textContent = game.streak;
+      $("progress-bar").style.width = (game.idx / game.deck.length * 100) + "%";
+      renderHearts();
+      $("q-flag").textContent = flagEmoji(item.c);
+      $("q-country").textContent = item[lang][0];
+      $("feedback").textContent = "";
+      $("feedback").className = "feedback";
+      /* Opciones: la capital correcta + 3 de la misma región (o del mundo) */
+      var others = shuffle(COUNTRIES.filter(function (c) {
+        return c.c !== item.c && c[lang][1] !== item[lang][1];
+      }));
+      var sameRegion = others.filter(function (c) { return c.r === item.r; });
+      var picks = sameRegion.slice(0, 3);
+      if (picks.length < 3) picks = picks.concat(others.filter(function (c) { return c.r !== item.r; }).slice(0, 3 - picks.length));
+      var opts = shuffle(picks.map(function (c) { return c[lang][1]; }).concat([item[lang][1]]));
+      var wrap = $("options"); wrap.innerHTML = "";
+      var letters = ["A", "B", "C", "D"];
+      opts.forEach(function (cap, i) {
+        var b = document.createElement("button");
+        b.className = "opt";
+        b.innerHTML = '<span class="letter">' + letters[i] + "</span><span>" + escapeHtml(cap) + "</span>";
+        b.addEventListener("click", function () { answer(b, cap); });
+        wrap.appendChild(b);
+      });
+      game.locked = false;
+    }
+    function renderHearts() {
+      var wrap = $("hud-hearts-wrap");
+      if (!settings.maxErrors) { wrap.style.display = "none"; return; }
+      wrap.style.display = "";
+      var html = "";
+      for (var i = 0; i < settings.maxErrors; i++) {
+        html += '<span class="' + (i < game.errors ? "off" : "") + '">♥</span>';
+      }
+      $("hud-hearts").innerHTML = html;
+    }
+    function answer(btn, cap) {
+      if (!game || game.locked) return;
+      game.locked = true;
+      var item = game.deck[game.idx];
+      var right = item[settings.lang][1];
+      var buttons = $("options").querySelectorAll(".opt");
+      buttons.forEach(function (b) {
+        b.disabled = true;
+        if (b.textContent.indexOf(right) >= 0 && b.querySelector("span:last-child").textContent === right) b.classList.add("right");
+      });
+      var fb = $("feedback");
+      if (cap === right) {
+        game.correct++;
+        game.streak++;
+        var gain = 100 + Math.min(50, (game.streak - 1) * 10);
+        game.score += gain;
+        fb.textContent = t("correctMsg") + " +" + gain + (game.streak >= 3 ? " · " + t("streakMsg").replace("{n}", game.streak) : "");
+        fb.className = "feedback good";
+      } else {
+        btn.classList.add("wrong");
+        game.errors++;
+        game.streak = 0;
+        fb.textContent = t("wrongMsg") + " " + right + ".";
+        fb.className = "feedback bad";
+      }
+      $("hud-score").textContent = game.score;
+      $("hud-streak").textContent = game.streak;
+      renderHearts();
+      var outOfLives = settings.maxErrors > 0 && game.errors >= settings.maxErrors;
+      var lastQ = game.idx >= game.deck.length - 1;
+      setTimeout(function () {
+        if (outOfLives || lastQ) { endGame(outOfLives && !lastQ); }
+        else { game.idx++; renderQuestion(); }
+      }, 1400);
+    }
+    function endGame(ranOut) {
+      game.over = true;
+      var player = (settings.name || "").trim() || t("guestName");
+      var record = {
+        name: player,
+        region: regionName(game.region),
+        correct: game.correct,
+        total: game.deck.length,
+        score: game.score,
+        date: new Date().toISOString()
+      };
+      lastGameId = recordKey(record);
+      localScores.push(record);
+      storeList(LS_LOCAL, localScores);
+      $("end-title").textContent = ranOut ? t("endTitleOver") : t("endTitle");
+      $("end-score").textContent = game.score;
+      $("end-correct").textContent = game.correct + " / " + game.deck.length;
+      $("end-region").textContent = regionName(game.region);
+      $("end-player").textContent = player;
+      showScreen("screen-end");
+      renderBoard();
+      if (account) {
+        $("end-sync").textContent = t("syncing");
+        saveScoreToCloud(record).then(function (ok) {
+          $("end-sync").textContent = ok ? t("endSavedCloud") : t("syncFail");
+          renderBoard(); renderAccount();
+          if (ok) toast(t("toastSynced")); else toast(t("toastSavedLocal"));
+        });
+      } else {
+        pendingScores.push(record);
+        storeList(LS_PENDING, pendingScores);
+        $("end-sync").textContent = t("endSavedLocal");
+        renderAccount();
+        toast(t("toastSavedLocal"));
+      }
+    }
+
+    /* ==================== ARRANQUE ==================== */
+    document.querySelectorAll("svg.map .land").forEach(function (el) {
+      function go() { startGame(el.getAttribute("data-region")); }
+      el.addEventListener("click", go);
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
+    $("btn-signin").addEventListener("click", signIn);
+    $("btn-signout").addEventListener("click", signOut);
+    $("btn-sync").addEventListener("click", function () {
+      if (account) loadCloudAndSync();
+      else signIn();
+    });
+    $("btn-quit").addEventListener("click", function () { game = null; showScreen("screen-home"); renderBoard(); });
+    $("btn-again").addEventListener("click", function () { if (game) startGame(game.region); });
+    $("btn-home").addEventListener("click", function () { showScreen("screen-home"); renderBoard(); renderAccount(); });
+
+    bindSettings();
+    applyI18n();
+    renderBoard();
+    initMsal();
+    </script>
+  </body>
+</html>
